@@ -68,6 +68,7 @@ class _HomeState extends State<Home> {
         body: BlocBuilder<DragDropCubit, DragDropState>(
           builder: (context, state) {
             if (state is DragDrop) {
+              ScrollController sController = state.sController;
               containerSize = state.containerSize;
               double seatTypeS = state.seatTypeS;
               int crossAxisCount = state.crossAxisCount;
@@ -114,6 +115,7 @@ class _HomeState extends State<Home> {
                     ),
                     width: sWidth,
                     child: SingleChildScrollView(
+                      controller: sController,
                       child: SizedBox(
                         height: gridHeight,
                         child: Stack(

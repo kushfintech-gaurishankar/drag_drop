@@ -10,6 +10,7 @@ abstract class DragDropState extends Equatable {
 class DragDropInitial extends DragDropState {}
 
 class DragDrop extends DragDropState {
+  final ScrollController sController;
   final int crossAxisCount;
   final int mainAxisCount;
   final int gridGap;
@@ -21,6 +22,7 @@ class DragDrop extends DragDropState {
   final List<SeatModel> seats;
 
   const DragDrop({
+    required this.sController,
     required this.crossAxisCount,
     required this.mainAxisCount,
     required this.gridGap,
@@ -33,7 +35,5 @@ class DragDrop extends DragDropState {
   });
 
   @override
-  List<Object?> get props => [
-        seats,
-      ];
+  List<Object?> get props => [seats];
 }
