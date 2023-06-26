@@ -65,6 +65,7 @@ class _HomeState extends State<Home> {
         ..widgetAlignment()
         ..checkSeatExist(),
       child: Scaffold(
+        appBar: AppBar(),
         body: BlocBuilder<DragDropCubit, DragDropState>(
           builder: (context, state) {
             if (state is DragDrop) {
@@ -75,15 +76,15 @@ class _HomeState extends State<Home> {
               int gridLength = crossAxisCount * state.mainAxisCount;
               double gridHeight =
                   (state.gridGap * state.mainAxisCount).toDouble();
-              double pdAll = state.pdAll;
-              double pdBottom = state.pdBottom;
+              double mAll = state.mAll;
+              double mBottom = state.mBottom;
               List<String> seatTypes = state.seatTypes;
               List<SeatModel> seats = state.seats;
 
               return Stack(
                 children: [
                   Container(
-                    padding: EdgeInsets.all(pdAll),
+                    padding: EdgeInsets.all(mAll),
                     height: seatTypeS,
                     width: double.maxFinite,
                     child: SingleChildScrollView(
@@ -108,10 +109,10 @@ class _HomeState extends State<Home> {
                   ),
                   Container(
                     margin: EdgeInsets.only(
-                      top: seatTypeS + pdAll,
-                      left: pdAll,
-                      right: pdAll,
-                      bottom: pdBottom,
+                      top: seatTypeS + mAll,
+                      left: mAll,
+                      right: mAll,
+                      bottom: mBottom,
                     ),
                     width: sWidth,
                     child: SingleChildScrollView(

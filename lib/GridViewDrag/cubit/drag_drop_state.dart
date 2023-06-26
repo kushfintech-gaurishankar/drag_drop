@@ -16,8 +16,8 @@ class DragDrop extends DragDropState {
   final int gridGap;
   final double containerSize;
   final double seatTypeS;
-  final double pdAll;
-  final double pdBottom;
+  final double mAll;
+  final double mBottom;
   final List<String> seatTypes;
   final List<SeatModel> seats;
 
@@ -28,8 +28,8 @@ class DragDrop extends DragDropState {
     required this.gridGap,
     required this.containerSize,
     required this.seatTypeS,
-    required this.pdAll,
-    required this.pdBottom,
+    required this.mAll,
+    required this.mBottom,
     required this.seatTypes,
     required this.seats,
   });
