@@ -65,7 +65,22 @@ class _HomeState extends State<Home> {
         ..widgetAlignment()
         ..checkSeatExist(),
       child: Scaffold(
-        appBar: AppBar(),
+        appBar: AppBar(
+          actions: [
+            Builder(
+              builder: (context) {
+                return IconButton(
+                  onPressed: () =>
+                      BlocProvider.of<DragDropCubit>(context)..clearData(),
+                  icon: const Icon(
+                    Icons.delete,
+                    color: Colors.white,
+                  ),
+                );
+              }
+            ),
+          ],
+        ),
         body: BlocBuilder<DragDropCubit, DragDropState>(
           builder: (context, state) {
             if (state is DragDrop) {
@@ -143,7 +158,6 @@ class _HomeState extends State<Home> {
                                   top: seats[index].coordinate.dy,
                                   child: LongPressDraggable(
                                     delay: const Duration(milliseconds: 100),
-                                    data: index,
                                     onDragEnd: (DraggableDetails details) =>
                                         BlocProvider.of<DragDropCubit>(context)
                                           ..updatePosition(

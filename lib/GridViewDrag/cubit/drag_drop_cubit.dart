@@ -81,6 +81,14 @@ class DragDropCubit extends Cubit<DragDropState> {
     emit(_getState);
   }
 
+  clearData() {
+    seats = [];
+    mainAxisCount =
+        (sHeight - appBarHeight - seatTypeS - mAll - mBottom) ~/ gridGap;
+    emit(_getState);
+    gridBox.clear();
+  }
+
   checkSeatExist() async {
     // Saved widgets data
     gridBox = await Hive.openBox("Grid");
@@ -125,11 +133,6 @@ class DragDropCubit extends Cubit<DragDropState> {
     emit(_getState);
 
     await gridBox.put(
-      "seats",
-      jsonEncode(seats.map((e) => e.toJson()).toList()),
-    );
-
-    await gridBox.put(
       "dimensions",
       jsonEncode({
         "gridGap": gridGap,
@@ -157,18 +160,6 @@ class DragDropCubit extends Cubit<DragDropState> {
     double maxTop = gridHeight - containerSize;
     double top = max(0, min(maxTop, newTop));
 
-    // Checking if the dragged widget collides with other widgets inside the grid area or not
-    for (int i = 0; i < seats.length; i++) {
-      CoordinateModel cdn = seats[i].coordinate;
-
-      bool xExist = cdn.dx <= left && left < cdn.dx + containerSize ||
-          left <= cdn.dx && cdn.dx < left + containerSize;
-      bool yExist = cdn.dy <= top && top < cdn.dy + containerSize ||
-          top <= cdn.dy && cdn.dy < top + containerSize;
-
-      if (xExist && yExist) return;
-    }
-
     // Alignment of widget along with the grid lines
     if (left % gridGap >= gridGap / 2) {
       left = left - (left % gridGap) + gridGap;
@@ -182,6 +173,19 @@ class DragDropCubit extends Cubit<DragDropState> {
       top = top - (top % gridGap);
     }
 
+    // Checking if the dragged widget collides with other widgets inside the grid area or not
+    for (int i = 0; i < seats.length; i++) {
+      CoordinateModel cdn = seats[i].coordinate;
+
+      bool xExist = cdn.dx <= left && left < cdn.dx + containerSize ||
+          left <= cdn.dx && cdn.dx < left + containerSize;
+      bool yExist = cdn.dy <= top && top < cdn.dy + containerSize ||
+          top <= cdn.dy && cdn.dy < top + containerSize;
+
+      if (xExist && yExist) return;
+    }
+
+    // if the dragged widget reaches the end of grid container
     if ((top + containerSize) ~/ gridGap == mainAxisCount) {
       mainAxisCount += (containerSize ~/ gridGap);
       gridHeight = (mainAxisCount * gridGap).toDouble();
@@ -227,20 +231,6 @@ class DragDropCubit extends Cubit<DragDropState> {
     double maxTop = gridHeight - containerSize;
     double top = max(0, min(maxTop, newTop));
 
-    for (int i = 0; i < seats.length; i++) {
-      CoordinateModel cdn = seats[i].coordinate;
-
-      // Not checking with the same widget
-      if (cdn.dx != prevLeft || cdn.dy != prevTop) {
-        bool xExist = cdn.dx <= left && left < cdn.dx + containerSize ||
-            left <= cdn.dx && cdn.dx < left + containerSize;
-        bool yExist = cdn.dy <= top && top < cdn.dy + containerSize ||
-            top <= cdn.dy && cdn.dy < top + containerSize;
-
-        if (xExist && yExist) return;
-      }
-    }
-
     double leftDif = left - prevLeft;
     if (leftDif < 0) {
       if ((leftDif * -1) % gridGap >= gridGap / 2) {
@@ -268,6 +258,20 @@ class DragDropCubit extends Cubit<DragDropState> {
         top = top - (topDif % gridGap) + gridGap;
       } else {
         top = top - (topDif % gridGap);
+      }
+    }
+
+    for (int i = 0; i < seats.length; i++) {
+      CoordinateModel cdn = seats[i].coordinate;
+
+      // Not checking with the same widget
+      if (cdn.dx != prevLeft || cdn.dy != prevTop) {
+        bool xExist = cdn.dx <= left && left < cdn.dx + containerSize ||
+            left <= cdn.dx && cdn.dx < left + containerSize;
+        bool yExist = cdn.dy <= top && top < cdn.dy + containerSize ||
+            top <= cdn.dy && cdn.dy < top + containerSize;
+
+        if (xExist && yExist) return;
       }
     }
 
