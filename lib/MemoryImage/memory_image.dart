@@ -1,19 +1,10 @@
 import 'dart:io';
 import 'dart:typed_data';
 
+import 'package:drag_drop/MemoryImage/model/image_hive.dart';
 import 'package:flutter/material.dart';
 import 'package:hive/hive.dart';
 import 'package:http/http.dart';
-
-class ImageData {
-  final String name;
-  final Uint8List image;
-
-  const ImageData({
-    required this.name,
-    required this.image,
-  });
-}
 
 class TestHome extends StatefulWidget {
   const TestHome({super.key});
@@ -28,10 +19,13 @@ class _TestHomeState extends State<TestHome> {
   final TextEditingController _urlController = TextEditingController();
   bool downloading = false;
 
+  late final Box<ImageData> imageBox;
+
   List<ImageData> images = [];
 
   @override
   void initState() {
+    getImages();
     super.initState();
   }
 
@@ -135,11 +129,9 @@ class _TestHomeState extends State<TestHome> {
   }
 
   void getImages() async {
-    Box imageBox = await Hive.openBox("Image");
-    List<dynamic>? images = imageBox.get("images");
-    if (images != null) {
-      images = images.cast<Uint8List>();
-    }
+    Hive.registerAdapter(ImageDataAdapter());
+    imageBox = await Hive.openBox<ImageData>("Image");
+    images = imageBox.values.toList().reversed.toList();
 
     setState(() {});
   }
@@ -153,12 +145,15 @@ class _TestHomeState extends State<TestHome> {
       Response response = await get(Uri.parse(_urlController.text));
       if (response.statusCode == 200) {
         Uint8List image = response.bodyBytes;
-        List<ImageData> tempImages = [];
-        tempImages.add(ImageData(name: _nameController.text, image: image));
+        ImageData imageModel =
+            ImageData(name: _nameController.text, image: image);
+        List<ImageData> tempImages = [imageModel];
         tempImages.addAll(images);
         images = tempImages;
 
         setState(() {});
+
+        imageBox.add(imageModel);
       }
     } on SocketException {
       debugPrint("No Internet");

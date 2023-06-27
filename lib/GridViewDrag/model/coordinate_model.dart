@@ -1,8 +1,5 @@
 import 'package:equatable/equatable.dart';
-import 'package:json_annotation/json_annotation.dart';
 
-
-@JsonSerializable()
 class CoordinateModel extends Equatable {
   final double dx;
   final double dy;

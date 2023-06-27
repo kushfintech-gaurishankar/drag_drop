@@ -99,34 +99,43 @@ class DragDropCubit extends Cubit<DragDropState> {
       List<dynamic> list = jsonDecode(seatsData) as List;
       seats = list.map((e) => SeatModel.fromJson(e)).toList();
 
-      // Previous Screen dimensions
-      Map<String, dynamic> gD = jsonDecode(dimensions!);
-      int prevGG = gD["gridGap"];
-      int prevMAC = gD["mainAxisCount"];
+      if (dimensions != null) {
+        Map<String, dynamic> gD = jsonDecode(dimensions);
+        int prevGG = gD["gridGap"];
+        int prevMAC = gD["mainAxisCount"];
 
-      if (prevGG != gridGap || prevMAC != mainAxisCount) {
-        List<SeatModel> newSeats = seats.map((e) {
-          late double nDx;
-          late double nDy;
+        if (prevGG != gridGap || prevMAC != mainAxisCount) {
+          List<SeatModel> newSeats = seats.map((e) {
+            late double nDx;
+            late double nDy;
 
-          if (prevMAC > mainAxisCount) {
-            mainAxisCount = prevMAC;
-            gridHeight = (mainAxisCount * gridGap).toDouble();
-          }
+            if (prevMAC > mainAxisCount) {
+              mainAxisCount = prevMAC;
+              gridHeight = (mainAxisCount * gridGap).toDouble();
+            }
 
-          nDx = (e.coordinate.dx / prevGG) * gridGap;
-          nDy = (e.coordinate.dy / prevGG) * gridGap;
+            nDx = (e.coordinate.dx / prevGG) * gridGap;
+            nDy = (e.coordinate.dy / prevGG) * gridGap;
 
-          return SeatModel(
-            name: e.name,
-            coordinate: CoordinateModel(
-              dx: nDx,
-              dy: nDy,
-            ),
+            return SeatModel(
+              name: e.name,
+              isWindowSeat: e.isWindowSeat,
+              isFoldingSeat: e.isFoldingSeat,
+              isReadingLights: e.isReadingLights,
+              coordinate: CoordinateModel(
+                dx: nDx,
+                dy: nDy,
+              ),
+            );
+          }).toList();
+
+          seats = newSeats;
+
+          await gridBox.put(
+            "seats",
+            jsonEncode(seats.map((e) => e.toJson()).toList()),
           );
-        }).toList();
-
-        seats = newSeats;
+        }
       }
     }
 
@@ -143,7 +152,8 @@ class DragDropCubit extends Cubit<DragDropState> {
     // gridBox.clear();
   }
 
-  addWidget({required String name, required DraggableDetails details}) async {
+  addWidget(
+      {required SeatModel seat, required DraggableDetails details}) async {
     // Checking if the dragged widget touches the grid area or not
     if (details.offset.dy + containerSize < seatTypeS + mAll) return;
 
@@ -202,7 +212,10 @@ class DragDropCubit extends Cubit<DragDropState> {
     List<SeatModel> seatModels = seats.toList();
 
     seatModels.add(SeatModel(
-      name: name,
+      name: seat.name,
+      isWindowSeat: seat.isWindowSeat,
+      isFoldingSeat: seat.isFoldingSeat,
+      isReadingLights: seat.isReadingLights,
       coordinate: CoordinateModel(dx: left, dy: top),
     ));
 
@@ -292,6 +305,9 @@ class DragDropCubit extends Cubit<DragDropState> {
 
     seatModels[index] = SeatModel(
       name: seats[index].name,
+      isWindowSeat: seats[index].isWindowSeat,
+      isFoldingSeat: seats[index].isFoldingSeat,
+      isReadingLights: seats[index].isReadingLights,
       coordinate: CoordinateModel(dx: left, dy: top),
     );
 
@@ -299,6 +315,24 @@ class DragDropCubit extends Cubit<DragDropState> {
 
     emit(_getState);
 
+    await gridBox.put(
+      "seats",
+      jsonEncode(seats.map((e) => e.toJson()).toList()),
+    );
+  }
+
+  updateSeat({required int index, required SeatModel seat}) async {
+    List<SeatModel> tempSeats = seats.toList();
+    tempSeats[index] = SeatModel(
+      name: seat.name,
+      isWindowSeat: seat.isWindowSeat,
+      isFoldingSeat: seat.isFoldingSeat,
+      isReadingLights: seat.isReadingLights,
+      coordinate: seat.coordinate,
+    );
+    seats = tempSeats;
+    emit(_getState);
+    
     await gridBox.put(
       "seats",
       jsonEncode(seats.map((e) => e.toJson()).toList()),
