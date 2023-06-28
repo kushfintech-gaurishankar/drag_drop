@@ -6,6 +6,8 @@ class SeatModel extends Equatable {
   final bool isWindowSeat;
   final bool isFoldingSeat;
   final bool isReadingLights;
+  final double height;
+  final double width;
   final CoordinateModel coordinate;
 
   const SeatModel({
@@ -13,6 +15,8 @@ class SeatModel extends Equatable {
     required this.isWindowSeat,
     required this.isFoldingSeat,
     required this.isReadingLights,
+    required this.height,
+    required this.width,
     required this.coordinate,
   });
 
@@ -21,6 +25,8 @@ class SeatModel extends Equatable {
         isWindowSeat: json["isWindowSeat"] as bool,
         isFoldingSeat: json["isFoldingSeat"] as bool,
         isReadingLights: json["isReadingLights"] as bool,
+        height: json["height"] as double,
+        width: json["width"] as double,
         coordinate: CoordinateModel.fromJson(
             json["coordinate"] as Map<String, dynamic>),
       );
@@ -30,6 +36,8 @@ class SeatModel extends Equatable {
         "isWindowSeat": isWindowSeat,
         "isFoldingSeat": isFoldingSeat,
         "isReadingLights": isReadingLights,
+        "height": height,
+        "width": width,
         "coordinate": coordinate.toJson(),
       };
 

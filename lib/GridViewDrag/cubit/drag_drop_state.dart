@@ -14,11 +14,10 @@ class DragDrop extends DragDropState {
   final int crossAxisCount;
   final int mainAxisCount;
   final int gridGap;
-  final double containerSize;
   final double seatTypeS;
   final double mAll;
   final double mBottom;
-  final List<String> seatTypes;
+  final List<SeatTypeModel> sTypes;
   final List<SeatModel> seats;
 
   const DragDrop({
@@ -26,11 +25,10 @@ class DragDrop extends DragDropState {
     required this.crossAxisCount,
     required this.mainAxisCount,
     required this.gridGap,
-    required this.containerSize,
     required this.seatTypeS,
     required this.mAll,
     required this.mBottom,
-    required this.seatTypes,
+    required this.sTypes,
     required this.seats,
   });
 
