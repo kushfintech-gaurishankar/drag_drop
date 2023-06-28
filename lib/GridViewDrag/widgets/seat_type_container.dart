@@ -39,7 +39,7 @@ Container sTCList({
                 ),
               );
 
-              BlocProvider.of<DragDropCubit>(context).addWidget(
+              BlocProvider.of<DragDropCubit>(context).addSeat(
                 seat: s,
                 details: details,
               );

@@ -170,7 +170,7 @@ showModal({
                       coordinate: seat.coordinate,
                     );
 
-                    BlocProvider.of<DragDropCubit>(mainContext).updateProperty(
+                    BlocProvider.of<DragDropCubit>(mainContext).updateSeat(
                       index: mainIndex,
                       seat: newSeat,
                       newHeight: height,
