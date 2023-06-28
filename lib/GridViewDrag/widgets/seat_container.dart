@@ -15,6 +15,7 @@ Container sCList({
   required ScrollController sController,
   required double gridHeight,
   required int crossAxisCount,
+  required int mainAxisCount,
   required int gridLength,
   required List<SeatModel> seats,
 }) {
@@ -54,9 +55,12 @@ Container sCList({
                   top: seats[index].coordinate.dy,
                   child: GestureDetector(
                     onTap: () => showModal(
-                      context: context,
+                      mainContext: context,
                       seat: seats[index],
-                      index: index,
+                      mainIndex: index,
+                      mainAxisCount: mainAxisCount,
+                      crossAxisCount: crossAxisCount,
+                      gridGap: gridGap,
                     ),
                     child: LongPressDraggable(
                       delay: const Duration(milliseconds: 100),

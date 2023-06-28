@@ -58,6 +58,7 @@ class _HomeState extends State<Home> {
                     gridHeight:
                         (state.gridGap * state.mainAxisCount).toDouble(),
                     crossAxisCount: state.crossAxisCount,
+                    mainAxisCount: state.mainAxisCount,
                     gridLength: state.crossAxisCount * state.mainAxisCount,
                     seats: state.seats,
                   ),

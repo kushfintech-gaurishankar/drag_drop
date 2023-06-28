@@ -23,7 +23,6 @@ class DragDropCubit extends Cubit<DragDropState> {
   List<SeatModel> seats = [];
 
   final int crossAxisCount = 25;
-
   late final double sHeight;
   late final double sWidth;
   late final double appBarHeight;
@@ -141,14 +140,15 @@ class DragDropCubit extends Cubit<DragDropState> {
       jsonEncode({
         "gridGap": gridGap,
         "mainAxisCount": mainAxisCount,
+        "crossAxisCount": crossAxisCount,
       }),
     );
-
-    // gridBox.clear();
   }
 
-  addWidget(
-      {required SeatModel seat, required DraggableDetails details}) async {
+  addWidget({
+    required SeatModel seat,
+    required DraggableDetails details,
+  }) async {
     // Checking if the dragged widget touches the grid area or not
     if (details.offset.dy + seat.height - (seat.height / 4) <
         seatTypeS + mAll + appBarHeight) {
@@ -205,6 +205,7 @@ class DragDropCubit extends Cubit<DragDropState> {
         jsonEncode({
           "gridGap": gridGap,
           "mainAxisCount": mainAxisCount,
+          "crossAxisCount": crossAxisCount,
         }),
       );
     }
@@ -248,33 +249,38 @@ class DragDropCubit extends Cubit<DragDropState> {
     double maxTop = gridHeight - seat.height;
     double top = max(0, min(maxTop, newTop));
 
-    double leftDif = left - prevLeft;
-    if (leftDif < 0) {
-      if ((leftDif * -1) % gridGap >= gridGap / 2) {
-        left = left - (leftDif % gridGap);
+    if (left != 0) {
+      // Not modifying if the dragged widget touches the border
+      double leftDif = left - prevLeft;
+      if (leftDif < 0) {
+        if ((leftDif * -1) % gridGap >= gridGap / 2) {
+          left = left - (leftDif % gridGap);
+        } else {
+          left = left - (leftDif % gridGap) + gridGap;
+        }
       } else {
-        left = left - (leftDif % gridGap) + gridGap;
-      }
-    } else {
-      if (leftDif % gridGap >= gridGap / 2) {
-        left = left - (leftDif % gridGap) + gridGap;
-      } else {
-        left = left - (leftDif % gridGap);
+        if (leftDif % gridGap >= gridGap / 2) {
+          left = left - (leftDif % gridGap) + gridGap;
+        } else {
+          left = left - (leftDif % gridGap);
+        }
       }
     }
 
-    double topDif = top - prevTop;
-    if (topDif < 0) {
-      if ((topDif * -1) % gridGap >= gridGap / 2) {
-        top = top - (topDif % gridGap);
+    if (top != 0) {
+      double topDif = top - prevTop;
+      if (topDif < 0) {
+        if ((topDif * -1) % gridGap >= gridGap / 2) {
+          top = top - (topDif % gridGap);
+        } else {
+          top = top - (topDif % gridGap) + gridGap;
+        }
       } else {
-        top = top - (topDif % gridGap) + gridGap;
-      }
-    } else {
-      if (topDif % gridGap >= gridGap / 2) {
-        top = top - (topDif % gridGap) + gridGap;
-      } else {
-        top = top - (topDif % gridGap);
+        if (topDif % gridGap >= gridGap / 2) {
+          top = top - (topDif % gridGap) + gridGap;
+        } else {
+          top = top - (topDif % gridGap);
+        }
       }
     }
 
@@ -303,6 +309,7 @@ class DragDropCubit extends Cubit<DragDropState> {
         jsonEncode({
           "gridGap": gridGap,
           "mainAxisCount": mainAxisCount,
+          "crossAxisCount": crossAxisCount,
         }),
       );
     }
@@ -329,17 +336,53 @@ class DragDropCubit extends Cubit<DragDropState> {
     );
   }
 
-  updateSeat({required int index, required SeatModel seat}) async {
+  updateProperty({
+    required int index,
+    required SeatModel seat,
+    required double newHeight,
+    required double newWidth,
+  }) async {
+    bool overlap = false;
+
+    if (seat.height != newHeight || seat.width != newWidth) {
+      double left = seat.coordinate.dx;
+      double top = seat.coordinate.dy;
+
+      for (int i = 0; i < seats.length; i++) {
+        CoordinateModel cn = seats[i].coordinate;
+        double h = seats[i].height;
+        double w = seats[i].width;
+
+        if (cn.dx != left || cn.dy != top) {
+          bool xExist = cn.dx <= left && left < cn.dx + w ||
+              left <= cn.dx && cn.dx < left + newWidth;
+          bool yExist = cn.dy <= top && top < cn.dy + h ||
+              top <= cn.dy && cn.dy < top + newHeight;
+
+          if (xExist && yExist) {
+            overlap = true;
+          }
+        }
+      }
+    }
+
+    // If does not overlap with other, then setting new size
+    double h =
+        overlap ? seat.height : min(gridHeight - seat.coordinate.dy, newHeight);
+    double w =
+        overlap ? seat.width : min(gridWidth - seat.coordinate.dx, newWidth);
+
     List<SeatModel> tempSeats = seats.toList();
     tempSeats[index] = SeatModel(
       name: seat.name,
       isWindowSeat: seat.isWindowSeat,
       isFoldingSeat: seat.isFoldingSeat,
       isReadingLights: seat.isReadingLights,
-      height: seat.height,
-      width: seat.width,
+      height: h,
+      width: w,
       coordinate: seat.coordinate,
     );
+
     seats = tempSeats;
     emit(_getState);
 
