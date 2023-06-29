@@ -176,7 +176,7 @@ class DragDropCubit extends Cubit<DragDropState> {
           gridGap = (sWidth ~/ crossAxisCount);
           seatTypeS = gridGap * 4;
 
-          mAll = (sWidth % gridGap) / 2;
+          mAll = (sWidth % crossAxisCount) / 2;
           double gridHeightWithBottom =
               sHeight - appBarHeight - seatTypeS - mAll;
           mBottom = gridHeightWithBottom % gridGap;
