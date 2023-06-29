@@ -27,7 +27,7 @@ class DragDropCubit extends Cubit<DragDropState> {
   late final double appBarHeight;
   late final Box gridBox;
 
-  int crossAxisCount = 25;
+  int crossAxisCount = 50;
   double bWidth = 48;
   late int gridGap;
   late double seatTypeS;
@@ -408,83 +408,6 @@ class DragDropCubit extends Cubit<DragDropState> {
     await gridBox.put(
       "seats",
       jsonEncode(seats.map((e) => e.toJson()).toList()),
-    );
-  }
-
-  newDimensions(int newCAC) async {
-    if (newCAC == crossAxisCount) return;
-
-    String? seatsData = gridBox.get("seats");
-    String? dimensions = gridBox.get("dimensions");
-    Map<String, dynamic> gD = jsonDecode(dimensions!);
-    int prevGG = gD["gridGap"];
-    int prevMAC = gD["mainAxisCount"];
-
-    // New Grid dimensions
-    crossAxisCount = newCAC;
-    gridGap = (sWidth ~/ crossAxisCount);
-    seatTypeS = gridGap * 4;
-
-    mAll = (sWidth % crossAxisCount) / 2;
-    double gridHeightWithBottom = sHeight - appBarHeight - seatTypeS - mAll;
-    mBottom = gridHeightWithBottom % gridGap;
-
-    gridHeight = gridHeightWithBottom - mBottom;
-    gridWidth = (crossAxisCount * gridGap).toDouble();
-    mainAxisCount = gridHeight ~/ gridGap;
-
-    // New dimensions for seats
-    if (seatsData != null) {
-      List<dynamic> list = jsonDecode(seatsData) as List;
-      seats = list.map((e) => SeatModel.fromJson(e)).toList();
-
-      List<SeatModel> newSeats = seats.map((seat) {
-        if (prevMAC > mainAxisCount) {
-          mainAxisCount = prevMAC;
-          gridHeight = (mainAxisCount * gridGap).toDouble();
-        }
-
-        // New Coordinate
-        double nDx = (seat.coordinate.dx / prevGG) * gridGap;
-        double nDy = (seat.coordinate.dy / prevGG) * gridGap;
-
-        // New Size
-        double nH = (seat.height / prevGG) * gridGap;
-        double nW = (seat.width / prevGG) * gridGap;
-
-        return SeatModel(
-          name: seat.name,
-          isWindowSeat: seat.isWindowSeat,
-          isFoldingSeat: seat.isFoldingSeat,
-          isReadingLights: seat.isReadingLights,
-          height: nH,
-          width: nW,
-          heightInch: seat.heightInch,
-          widthInch: seat.widthInch,
-          coordinate: CoordinateModel(
-            dx: nDx,
-            dy: nDy,
-          ),
-        );
-      }).toList();
-
-      seats = newSeats;
-
-      await gridBox.put(
-        "seats",
-        jsonEncode(seats.map((e) => e.toJson()).toList()),
-      );
-    }
-
-    emit(_getState);
-
-    await gridBox.put(
-      "dimensions",
-      jsonEncode({
-        "gridGap": gridGap,
-        "mainAxisCount": mainAxisCount,
-        "crossAxisCount": newCAC,
-      }),
     );
   }
 }
