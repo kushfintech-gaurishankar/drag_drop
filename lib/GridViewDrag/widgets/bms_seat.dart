@@ -30,6 +30,12 @@ void bmsSeat({
     },
   ];
 
+  TextEditingController heightC = TextEditingController();
+  TextEditingController widthC = TextEditingController();
+
+  heightC.text = seat.heightInch.toString();
+  widthC.text = seat.widthInch.toString();
+
   double height = seat.height;
   double width = seat.width;
 
@@ -114,50 +120,43 @@ void bmsSeat({
                 const SizedBox(height: 20),
                 Row(
                   children: [
-                    const Text("Width"),
+                    Flexible(
+                      child: TextFormField(
+                        keyboardType: TextInputType.number,
+                        controller: widthC,
+                        decoration: const InputDecoration(
+                          isDense: true,
+                          labelText: "Width",
+                          hintText: "Width in inch",
+                          border: OutlineInputBorder(),
+                        ),
+                      ),
+                    ),
                     const SizedBox(width: 20),
                     Flexible(
-                      child: Slider(
-                        min: gridGap.toDouble(),
-                        max: ((crossAxisCount) * gridGap).toDouble(),
-                        divisions: crossAxisCount - 1,
-                        value: width,
-                        label: width.round().toString(),
-                        onChanged: (value) {
-                          width = value;
-                          newSetState(() {});
-                        },
+                      child: TextFormField(
+                        keyboardType: TextInputType.number,
+                        controller: heightC,
+                        decoration: const InputDecoration(
+                          isDense: true,
+                          labelText: "Height",
+                          hintText: "Height in inch",
+                          border: OutlineInputBorder(),
+                        ),
                       ),
                     ),
                   ],
                 ),
-                Row(
-                  children: [
-                    const Text("Height"),
-                    const SizedBox(width: 20),
-                    Flexible(
-                      child: Slider(
-                        min: gridGap.toDouble(),
-                        max: (mainAxisCount * gridGap).toDouble(),
-                        divisions: mainAxisCount - 1,
-                        value: height,
-                        label: height.round().toString(),
-                        onChanged: (value) {
-                          height = value;
-                          newSetState(() {});
-                        },
-                      ),
-                    ),
-                  ],
-                ),
+                const SizedBox(height: 20),
                 ElevatedButton(
                   onPressed: () {
+                    Navigator.pop(context);
                     bool noChange =
                         seat.isWindowSeat == features[0]["status"] &&
                             seat.isFoldingSeat == features[1]["status"] &&
                             seat.isReadingLights == features[2]["status"] &&
-                            seat.height == height &&
-                            seat.width == width;
+                            seat.heightInch == int.parse(heightC.text) &&
+                            seat.widthInch == int.parse(widthC.text);
                     if (noChange) return;
 
                     SeatModel newSeat = SeatModel(
@@ -167,15 +166,16 @@ void bmsSeat({
                       isReadingLights: features[2]["status"],
                       height: seat.height,
                       width: seat.width,
+                      heightInch: seat.heightInch,
+                      widthInch: seat.widthInch,
                       coordinate: seat.coordinate,
                     );
 
-                    Navigator.pop(context);
                     BlocProvider.of<DragDropCubit>(mainContext).updateSeat(
                       index: mainIndex,
                       seat: newSeat,
-                      newHeight: height,
-                      newWidth: width,
+                      newHInch: int.parse(heightC.text),
+                      newWInch: int.parse(widthC.text),
                     );
                   },
                   child: const Text("Save"),

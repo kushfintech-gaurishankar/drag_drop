@@ -14,6 +14,7 @@ class DragDrop extends DragDropState {
   final int crossAxisCount;
   final int mainAxisCount;
   final int gridGap;
+  final double bWidth;
   final double seatTypeS;
   final double mAll;
   final double mBottom;
@@ -25,6 +26,7 @@ class DragDrop extends DragDropState {
     required this.crossAxisCount,
     required this.mainAxisCount,
     required this.gridGap,
+    required this.bWidth,
     required this.seatTypeS,
     required this.mAll,
     required this.mBottom,

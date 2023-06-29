@@ -42,7 +42,7 @@ Container sCList({
                   decoration: BoxDecoration(
                     border: Border.all(
                       width: 1,
-                      color: Colors.black45,
+                      color: Colors.black.withOpacity(.15),
                     ),
                   ),
                 );

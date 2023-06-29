@@ -1,5 +1,4 @@
 import 'package:drag_drop/GridViewDrag/cubit/drag_drop_cubit.dart';
-import 'package:drag_drop/GridViewDrag/widgets/bms_cac.dart';
 import 'package:drag_drop/GridViewDrag/widgets/seat_container.dart';
 import 'package:drag_drop/GridViewDrag/widgets/seat_type_container.dart';
 import 'package:flutter/material.dart';
@@ -28,18 +27,6 @@ class _HomeState extends State<Home> {
           actions: [
             Builder(builder: (context) {
               return IconButton(
-                onPressed: () => bmsCAC(
-                  mainContext: context,
-                  crossAxisCount: crossAxisCount,
-                ),
-                icon: const Icon(
-                  Icons.change_circle_outlined,
-                  color: Colors.white,
-                ),
-              );
-            }),
-            Builder(builder: (context) {
-              return IconButton(
                 onPressed: () =>
                     BlocProvider.of<DragDropCubit>(context)..clearData(),
                 icon: const Icon(
@@ -60,6 +47,8 @@ class _HomeState extends State<Home> {
                   sTCList(
                     context: context,
                     gridGap: state.gridGap,
+                    crossAxisCount: state.crossAxisCount,
+                    bWidth: state.bWidth,
                     seatTypeS: state.seatTypeS,
                     mAll: state.mAll,
                     sTypes: state.sTypes,

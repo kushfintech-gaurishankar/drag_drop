@@ -16,9 +16,9 @@ class DragDropCubit extends Cubit<DragDropState> {
   final BuildContext context;
   final ScrollController sController = ScrollController();
   List<SeatTypeModel> sTypes = const [
-    SeatTypeModel(name: "D", hTimes: 3, wTimes: 2),
-    SeatTypeModel(name: "P", hTimes: 2, wTimes: 2),
-    SeatTypeModel(name: "H", hTimes: 2, wTimes: 1),
+    SeatTypeModel(name: "D", height: 6, width: 6),
+    SeatTypeModel(name: "P", height: 9, width: 8),
+    SeatTypeModel(name: "H", height: 7, width: 5),
   ];
   List<SeatModel> seats = [];
 
@@ -28,6 +28,7 @@ class DragDropCubit extends Cubit<DragDropState> {
   late final Box gridBox;
 
   int crossAxisCount = 25;
+  double bWidth = 48;
   late int gridGap;
   late double seatTypeS;
   late double mAll;
@@ -43,7 +44,7 @@ class DragDropCubit extends Cubit<DragDropState> {
 
     // Grid Spacing, Draggable Container size, Seat types container height
     gridGap = (sWidth ~/ crossAxisCount);
-    seatTypeS = gridGap * 4;
+    seatTypeS = sHeight * .06;
 
     // Padding for the container to have perfect grid alignment
     mAll = (sWidth % crossAxisCount) / 2;
@@ -61,6 +62,7 @@ class DragDropCubit extends Cubit<DragDropState> {
         crossAxisCount: crossAxisCount,
         mainAxisCount: mainAxisCount,
         gridGap: gridGap,
+        bWidth: bWidth,
         seatTypeS: seatTypeS,
         mAll: mAll,
         mBottom: mBottom,
@@ -80,81 +82,6 @@ class DragDropCubit extends Cubit<DragDropState> {
     gridBox.clear();
   }
 
-  newDimensions(int newCAC) async {
-    if (newCAC == crossAxisCount) return;
-
-    String? seatsData = gridBox.get("seats");
-    String? dimensions = gridBox.get("dimensions");
-    Map<String, dynamic> gD = jsonDecode(dimensions!);
-    int prevGG = gD["gridGap"];
-    int prevMAC = gD["mainAxisCount"];
-
-    // New Grid dimensions
-    crossAxisCount = newCAC;
-    gridGap = (sWidth ~/ crossAxisCount);
-    seatTypeS = gridGap * 4;
-
-    mAll = (sWidth % crossAxisCount) / 2;
-    double gridHeightWithBottom = sHeight - appBarHeight - seatTypeS - mAll;
-    mBottom = gridHeightWithBottom % gridGap;
-
-    gridHeight = gridHeightWithBottom - mBottom;
-    gridWidth = (crossAxisCount * gridGap).toDouble();
-    mainAxisCount = gridHeight ~/ gridGap;
-
-    // New dimensions for seats
-    if (seatsData != null) {
-      List<dynamic> list = jsonDecode(seatsData) as List;
-      seats = list.map((e) => SeatModel.fromJson(e)).toList();
-
-      List<SeatModel> newSeats = seats.map((seat) {
-        if (prevMAC > mainAxisCount) {
-          mainAxisCount = prevMAC;
-          gridHeight = (mainAxisCount * gridGap).toDouble();
-        }
-
-        // New Coordinate
-        double nDx = (seat.coordinate.dx / prevGG) * gridGap;
-        double nDy = (seat.coordinate.dy / prevGG) * gridGap;
-
-        // New Size
-        double nH = (seat.height / prevGG) * gridGap;
-        double nW = (seat.width / prevGG) * gridGap;
-
-        return SeatModel(
-          name: seat.name,
-          isWindowSeat: seat.isWindowSeat,
-          isFoldingSeat: seat.isFoldingSeat,
-          isReadingLights: seat.isReadingLights,
-          height: nH,
-          width: nW,
-          coordinate: CoordinateModel(
-            dx: nDx,
-            dy: nDy,
-          ),
-        );
-      }).toList();
-
-      seats = newSeats;
-
-      await gridBox.put(
-        "seats",
-        jsonEncode(seats.map((e) => e.toJson()).toList()),
-      );
-    }
-
-    emit(_getState);
-
-    await gridBox.put(
-      "dimensions",
-      jsonEncode({
-        "gridGap": gridGap,
-        "mainAxisCount": mainAxisCount,
-        "crossAxisCount": newCAC,
-      }),
-    );
-  }
-
   checkSeats() async {
     // Saved widgets data
     gridBox = await Hive.openBox("Grid");
@@ -169,22 +96,6 @@ class DragDropCubit extends Cubit<DragDropState> {
         Map<String, dynamic> gD = jsonDecode(dimensions);
         int prevGG = gD["gridGap"];
         int prevMAC = gD["mainAxisCount"];
-        int prevCAC = gD["crossAxisCount"];
-
-        if (prevCAC != crossAxisCount) {
-          crossAxisCount = prevCAC;
-          gridGap = (sWidth ~/ crossAxisCount);
-          seatTypeS = gridGap * 4;
-
-          mAll = (sWidth % crossAxisCount) / 2;
-          double gridHeightWithBottom =
-              sHeight - appBarHeight - seatTypeS - mAll;
-          mBottom = gridHeightWithBottom % gridGap;
-
-          gridHeight = gridHeightWithBottom - mBottom;
-          gridWidth = (crossAxisCount * gridGap).toDouble();
-          mainAxisCount = gridHeight ~/ gridGap;
-        }
 
         if (prevGG != gridGap || prevMAC != mainAxisCount) {
           List<SeatModel> newSeats = seats.map((seat) {
@@ -208,6 +119,8 @@ class DragDropCubit extends Cubit<DragDropState> {
               isReadingLights: seat.isReadingLights,
               height: nH,
               width: nW,
+              heightInch: seat.heightInch,
+              widthInch: seat.widthInch,
               coordinate: CoordinateModel(
                 dx: nDx,
                 dy: nDy,
@@ -232,17 +145,21 @@ class DragDropCubit extends Cubit<DragDropState> {
       jsonEncode({
         "gridGap": gridGap,
         "mainAxisCount": mainAxisCount,
-        "crossAxisCount": crossAxisCount,
       }),
     );
   }
 
   addSeat({
-    required SeatModel seat,
+    required SeatTypeModel sType,
     required DraggableDetails details,
   }) async {
+    double seatH =
+        double.parse(((sType.height / bWidth) * gridWidth).toStringAsFixed(2));
+    double seatW =
+        double.parse(((sType.width / bWidth) * gridWidth).toStringAsFixed(2));
+
     // Checking if the dragged widget touches the grid area or not
-    if (details.offset.dy + seat.height - (seat.height / 4) <
+    if (details.offset.dy + seatH - (seatH / 4) <
         seatTypeS + mAll + appBarHeight) {
       return;
     }
@@ -250,14 +167,14 @@ class DragDropCubit extends Cubit<DragDropState> {
     // New x coordinate of the dragged Widget
     double newLeft = details.offset.dx - mAll;
     // The max x coordinate to which it can be moved
-    double maxLeft = sWidth - seat.width - mAll * 2;
+    double maxLeft = sWidth - seatW - mAll * 2;
     // final x coordinate inside the grid view
     double left = max(0, min(maxLeft, newLeft));
 
     // Adding the y coordinate scroll offset to position it in right place
     double yOffset = details.offset.dy + sController.offset;
     double newTop = yOffset - appBarHeight - seatTypeS - mAll;
-    double maxTop = gridHeight - seat.height;
+    double maxTop = gridHeight - seatH;
     double top = max(0, min(maxTop, newTop));
 
     // Alignment of widget along with the grid lines
@@ -280,16 +197,16 @@ class DragDropCubit extends Cubit<DragDropState> {
       double w = seats[i].width;
 
       bool xExist = cn.dx <= left && left < cn.dx + w ||
-          left <= cn.dx && cn.dx < left + seat.width;
+          left <= cn.dx && cn.dx < left + seatW;
       bool yExist = cn.dy <= top && top < cn.dy + h ||
-          top <= cn.dy && cn.dy < top + seat.height;
+          top <= cn.dy && cn.dy < top + seatH;
 
       if (xExist && yExist) return;
     }
 
     // if the dragged widget reaches the end of grid container
-    if ((top + seat.height) ~/ gridGap == mainAxisCount) {
-      mainAxisCount += (seat.height ~/ gridGap);
+    if ((top + seatH) ~/ gridGap == mainAxisCount) {
+      mainAxisCount += (seatH ~/ gridGap);
       gridHeight = (mainAxisCount * gridGap).toDouble();
 
       await gridBox.put(
@@ -297,7 +214,6 @@ class DragDropCubit extends Cubit<DragDropState> {
         jsonEncode({
           "gridGap": gridGap,
           "mainAxisCount": mainAxisCount,
-          "crossAxisCount": crossAxisCount,
         }),
       );
     }
@@ -305,12 +221,14 @@ class DragDropCubit extends Cubit<DragDropState> {
     List<SeatModel> seatModels = seats.toList();
 
     seatModels.add(SeatModel(
-      name: seat.name,
-      isWindowSeat: seat.isWindowSeat,
-      isFoldingSeat: seat.isFoldingSeat,
-      isReadingLights: seat.isReadingLights,
-      height: seat.height,
-      width: seat.width,
+      name: sType.name,
+      isWindowSeat: false,
+      isFoldingSeat: false,
+      isReadingLights: false,
+      height: seatH,
+      width: seatW,
+      heightInch: sType.height,
+      widthInch: sType.width,
       coordinate: CoordinateModel(dx: left, dy: top),
     ));
 
@@ -401,7 +319,6 @@ class DragDropCubit extends Cubit<DragDropState> {
         jsonEncode({
           "gridGap": gridGap,
           "mainAxisCount": mainAxisCount,
-          "crossAxisCount": crossAxisCount,
         }),
       );
     }
@@ -415,6 +332,8 @@ class DragDropCubit extends Cubit<DragDropState> {
       isReadingLights: seats[index].isReadingLights,
       height: seats[index].height,
       width: seats[index].width,
+      heightInch: seats[index].heightInch,
+      widthInch: seats[index].widthInch,
       coordinate: CoordinateModel(dx: left, dy: top),
     );
 
@@ -431,13 +350,18 @@ class DragDropCubit extends Cubit<DragDropState> {
   updateSeat({
     required int index,
     required SeatModel seat,
-    required double newHeight,
-    required double newWidth,
+    required int newHInch,
+    required int newWInch,
   }) async {
     bool overlap = false;
 
+    double seatH =
+        double.parse(((newHInch / bWidth) * gridWidth).toStringAsFixed(2));
+    double seatW =
+        double.parse(((newWInch / bWidth) * gridWidth).toStringAsFixed(2));
+
     // Checking overlapping with other widgets with the new height and width
-    if (seat.height != newHeight || seat.width != newWidth) {
+    if (seat.heightInch != newHInch || seat.widthInch != newWInch) {
       double left = seat.coordinate.dx;
       double top = seat.coordinate.dy;
 
@@ -448,9 +372,9 @@ class DragDropCubit extends Cubit<DragDropState> {
 
         if (cn.dx != left || cn.dy != top) {
           bool xExist = cn.dx <= left && left < cn.dx + w ||
-              left <= cn.dx && cn.dx < left + newWidth;
+              left <= cn.dx && cn.dx < left + seatW;
           bool yExist = cn.dy <= top && top < cn.dy + h ||
-              top <= cn.dy && cn.dy < top + newHeight;
+              top <= cn.dy && cn.dy < top + seatH;
 
           if (xExist && yExist) {
             overlap = true;
@@ -461,9 +385,9 @@ class DragDropCubit extends Cubit<DragDropState> {
 
     // If does not overlap with other, then setting new size without exceeding the grid area
     double h =
-        overlap ? seat.height : min(gridHeight - seat.coordinate.dy, newHeight);
+        overlap ? seat.height : min(gridHeight - seat.coordinate.dy, seatH);
     double w =
-        overlap ? seat.width : min(gridWidth - seat.coordinate.dx, newWidth);
+        overlap ? seat.width : min(gridWidth - seat.coordinate.dx, seatW);
 
     List<SeatModel> tempSeats = seats.toList();
     tempSeats[index] = SeatModel(
@@ -473,6 +397,8 @@ class DragDropCubit extends Cubit<DragDropState> {
       isReadingLights: seat.isReadingLights,
       height: h,
       width: w,
+      heightInch: overlap ? seat.heightInch : newHInch,
+      widthInch: overlap ? seat.widthInch : newWInch,
       coordinate: seat.coordinate,
     );
 
@@ -482,6 +408,83 @@ class DragDropCubit extends Cubit<DragDropState> {
     await gridBox.put(
       "seats",
       jsonEncode(seats.map((e) => e.toJson()).toList()),
+    );
+  }
+
+  newDimensions(int newCAC) async {
+    if (newCAC == crossAxisCount) return;
+
+    String? seatsData = gridBox.get("seats");
+    String? dimensions = gridBox.get("dimensions");
+    Map<String, dynamic> gD = jsonDecode(dimensions!);
+    int prevGG = gD["gridGap"];
+    int prevMAC = gD["mainAxisCount"];
+
+    // New Grid dimensions
+    crossAxisCount = newCAC;
+    gridGap = (sWidth ~/ crossAxisCount);
+    seatTypeS = gridGap * 4;
+
+    mAll = (sWidth % crossAxisCount) / 2;
+    double gridHeightWithBottom = sHeight - appBarHeight - seatTypeS - mAll;
+    mBottom = gridHeightWithBottom % gridGap;
+
+    gridHeight = gridHeightWithBottom - mBottom;
+    gridWidth = (crossAxisCount * gridGap).toDouble();
+    mainAxisCount = gridHeight ~/ gridGap;
+
+    // New dimensions for seats
+    if (seatsData != null) {
+      List<dynamic> list = jsonDecode(seatsData) as List;
+      seats = list.map((e) => SeatModel.fromJson(e)).toList();
+
+      List<SeatModel> newSeats = seats.map((seat) {
+        if (prevMAC > mainAxisCount) {
+          mainAxisCount = prevMAC;
+          gridHeight = (mainAxisCount * gridGap).toDouble();
+        }
+
+        // New Coordinate
+        double nDx = (seat.coordinate.dx / prevGG) * gridGap;
+        double nDy = (seat.coordinate.dy / prevGG) * gridGap;
+
+        // New Size
+        double nH = (seat.height / prevGG) * gridGap;
+        double nW = (seat.width / prevGG) * gridGap;
+
+        return SeatModel(
+          name: seat.name,
+          isWindowSeat: seat.isWindowSeat,
+          isFoldingSeat: seat.isFoldingSeat,
+          isReadingLights: seat.isReadingLights,
+          height: nH,
+          width: nW,
+          heightInch: seat.heightInch,
+          widthInch: seat.widthInch,
+          coordinate: CoordinateModel(
+            dx: nDx,
+            dy: nDy,
+          ),
+        );
+      }).toList();
+
+      seats = newSeats;
+
+      await gridBox.put(
+        "seats",
+        jsonEncode(seats.map((e) => e.toJson()).toList()),
+      );
+    }
+
+    emit(_getState);
+
+    await gridBox.put(
+      "dimensions",
+      jsonEncode({
+        "gridGap": gridGap,
+        "mainAxisCount": mainAxisCount,
+        "crossAxisCount": newCAC,
+      }),
     );
   }
 }

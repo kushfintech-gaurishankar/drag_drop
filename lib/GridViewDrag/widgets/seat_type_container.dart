@@ -3,12 +3,11 @@ import 'package:drag_drop/GridViewDrag/model/seat_type_model.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import '../model/coordinate_model.dart';
-import '../model/seat_model.dart';
-
 Container sTCList({
   required BuildContext context,
   required int gridGap,
+  required int crossAxisCount,
+  required double bWidth,
   required double seatTypeS,
   required double mAll,
   required List<SeatTypeModel> sTypes,
@@ -25,39 +24,25 @@ Container sTCList({
 
           return LongPressDraggable(
             delay: const Duration(milliseconds: 100),
-            onDragEnd: (DraggableDetails details) {
-              SeatModel s = SeatModel(
-                name: sType.name,
-                isWindowSeat: false,
-                isFoldingSeat: false,
-                isReadingLights: false,
-                height: (sType.hTimes * gridGap).toDouble(),
-                width: (sType.wTimes * gridGap).toDouble(),
-                coordinate: const CoordinateModel(
-                  dx: 0,
-                  dy: 0,
-                ),
-              );
-
-              BlocProvider.of<DragDropCubit>(context).addSeat(
-                seat: s,
-                details: details,
-              );
-            },
+            onDragEnd: (DraggableDetails details) =>
+                BlocProvider.of<DragDropCubit>(context).addSeat(
+              sType: sType,
+              details: details,
+            ),
             childWhenDragging: seatTypeContainer(
               name: sType.name,
-              height: (sType.hTimes * gridGap).toDouble(),
-              width: (sType.wTimes * gridGap).toDouble(),
+              height: seatTypeS * .7,
+              width: seatTypeS * .7,
             ),
             feedback: seatTypeContainer(
               name: sType.name,
-              height: (sType.hTimes * gridGap).toDouble(),
-              width: (sType.wTimes * gridGap).toDouble(),
+              height: (sType.height / bWidth) * (crossAxisCount * gridGap),
+              width: (sType.width / bWidth) * (crossAxisCount * gridGap),
             ),
             child: seatTypeContainer(
               name: sType.name,
-              height: (sType.hTimes * gridGap).toDouble(),
-              width: (sType.wTimes * gridGap).toDouble(),
+              height: seatTypeS * .7,
+              width: seatTypeS * .7,
             ),
           );
         }),
