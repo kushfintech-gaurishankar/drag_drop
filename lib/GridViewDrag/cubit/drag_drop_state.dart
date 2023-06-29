@@ -35,6 +35,10 @@ class DragDrop extends DragDropState {
   @override
   List<Object?> get props => [
         crossAxisCount,
+        mainAxisCount,
+        gridGap,
+        mAll,
+        mBottom,
         seats,
       ];
 }

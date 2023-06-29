@@ -4,7 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../cubit/drag_drop_cubit.dart';
 import '../model/seat_model.dart';
 
-showModal({
+void bmsSeat({
   required BuildContext mainContext,
   required SeatModel seat,
   required int mainIndex,
@@ -170,13 +170,13 @@ showModal({
                       coordinate: seat.coordinate,
                     );
 
+                    Navigator.pop(context);
                     BlocProvider.of<DragDropCubit>(mainContext).updateSeat(
                       index: mainIndex,
                       seat: newSeat,
                       newHeight: height,
                       newWidth: width,
                     );
-                    Navigator.pop(context);
                   },
                   child: const Text("Save"),
                 ),

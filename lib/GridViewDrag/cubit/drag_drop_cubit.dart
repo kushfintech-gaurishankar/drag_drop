@@ -46,7 +46,7 @@ class DragDropCubit extends Cubit<DragDropState> {
     seatTypeS = gridGap * 4;
 
     // Padding for the container to have perfect grid alignment
-    mAll = (sWidth % gridGap) / 2;
+    mAll = (sWidth % crossAxisCount) / 2;
     double gridHeightWithBottom = sHeight - appBarHeight - seatTypeS - mAll;
     mBottom = gridHeightWithBottom % gridGap;
 
@@ -85,16 +85,16 @@ class DragDropCubit extends Cubit<DragDropState> {
 
     String? seatsData = gridBox.get("seats");
     String? dimensions = gridBox.get("dimensions");
-    print(dimensions);
-    // Map<String, dynamic> gD = jsonDecode(dimensions!);
-    // int prevGG = gD["gridGap"];
-    // int prevMAC = gD["mainAxisCount"];
+    Map<String, dynamic> gD = jsonDecode(dimensions!);
+    int prevGG = gD["gridGap"];
+    int prevMAC = gD["mainAxisCount"];
 
+    // New Grid dimensions
     crossAxisCount = newCAC;
     gridGap = (sWidth ~/ crossAxisCount);
     seatTypeS = gridGap * 4;
 
-    mAll = (sWidth % gridGap) / 2;
+    mAll = (sWidth % crossAxisCount) / 2;
     double gridHeightWithBottom = sHeight - appBarHeight - seatTypeS - mAll;
     mBottom = gridHeightWithBottom % gridGap;
 
@@ -102,45 +102,46 @@ class DragDropCubit extends Cubit<DragDropState> {
     gridWidth = (crossAxisCount * gridGap).toDouble();
     mainAxisCount = gridHeight ~/ gridGap;
 
-    // if (seatsData != null) {
-    //   List<dynamic> list = jsonDecode(seatsData) as List;
-    //   seats = list.map((e) => SeatModel.fromJson(e)).toList();
+    // New dimensions for seats
+    if (seatsData != null) {
+      List<dynamic> list = jsonDecode(seatsData) as List;
+      seats = list.map((e) => SeatModel.fromJson(e)).toList();
 
-    //   List<SeatModel> newSeats = seats.map((seat) {
-    //     if (prevMAC > mainAxisCount) {
-    //       mainAxisCount = prevMAC;
-    //       gridHeight = (mainAxisCount * gridGap).toDouble();
-    //     }
+      List<SeatModel> newSeats = seats.map((seat) {
+        if (prevMAC > mainAxisCount) {
+          mainAxisCount = prevMAC;
+          gridHeight = (mainAxisCount * gridGap).toDouble();
+        }
 
-    //     // New Coordinate
-    //     double nDx = (seat.coordinate.dx / prevGG) * gridGap;
-    //     double nDy = (seat.coordinate.dy / prevGG) * gridGap;
+        // New Coordinate
+        double nDx = (seat.coordinate.dx / prevGG) * gridGap;
+        double nDy = (seat.coordinate.dy / prevGG) * gridGap;
 
-    //     // New Size
-    //     double nH = (seat.height / prevGG) * gridGap;
-    //     double nW = (seat.width / prevGG) * gridGap;
+        // New Size
+        double nH = (seat.height / prevGG) * gridGap;
+        double nW = (seat.width / prevGG) * gridGap;
 
-    //     return SeatModel(
-    //       name: seat.name,
-    //       isWindowSeat: seat.isWindowSeat,
-    //       isFoldingSeat: seat.isFoldingSeat,
-    //       isReadingLights: seat.isReadingLights,
-    //       height: nH,
-    //       width: nW,
-    //       coordinate: CoordinateModel(
-    //         dx: nDx,
-    //         dy: nDy,
-    //       ),
-    //     );
-    //   }).toList();
+        return SeatModel(
+          name: seat.name,
+          isWindowSeat: seat.isWindowSeat,
+          isFoldingSeat: seat.isFoldingSeat,
+          isReadingLights: seat.isReadingLights,
+          height: nH,
+          width: nW,
+          coordinate: CoordinateModel(
+            dx: nDx,
+            dy: nDy,
+          ),
+        );
+      }).toList();
 
-    //   seats = newSeats;
+      seats = newSeats;
 
-    //   await gridBox.put(
-    //     "seats",
-    //     jsonEncode(seats.map((e) => e.toJson()).toList()),
-    //   );
-    // }
+      await gridBox.put(
+        "seats",
+        jsonEncode(seats.map((e) => e.toJson()).toList()),
+      );
+    }
 
     emit(_getState);
 
@@ -435,6 +436,7 @@ class DragDropCubit extends Cubit<DragDropState> {
   }) async {
     bool overlap = false;
 
+    // Checking overlapping with other widgets with the new height and width
     if (seat.height != newHeight || seat.width != newWidth) {
       double left = seat.coordinate.dx;
       double top = seat.coordinate.dy;
@@ -457,7 +459,7 @@ class DragDropCubit extends Cubit<DragDropState> {
       }
     }
 
-    // If does not overlap with other, then setting new size
+    // If does not overlap with other, then setting new size without exceeding the grid area
     double h =
         overlap ? seat.height : min(gridHeight - seat.coordinate.dy, newHeight);
     double w =

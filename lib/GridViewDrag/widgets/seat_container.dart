@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../cubit/drag_drop_cubit.dart';
-import 'bottom_modal_sheet.dart';
+import 'bms_seat.dart';
 
 Container sCList({
   required BuildContext context,
@@ -54,7 +54,7 @@ Container sCList({
                   left: seats[index].coordinate.dx,
                   top: seats[index].coordinate.dy,
                   child: GestureDetector(
-                    onTap: () => showModal(
+                    onTap: () => bmsSeat(
                       mainContext: context,
                       seat: seats[index],
                       mainIndex: index,
