@@ -3,6 +3,7 @@ import 'package:equatable/equatable.dart';
 
 class SeatModel extends Equatable {
   final String name;
+  final String icon;
   final bool isWindowSeat;
   final bool isFoldingSeat;
   final bool isReadingLights;
@@ -14,6 +15,7 @@ class SeatModel extends Equatable {
 
   const SeatModel({
     required this.name,
+    required this.icon,
     required this.isWindowSeat,
     required this.isFoldingSeat,
     required this.isReadingLights,
@@ -26,6 +28,7 @@ class SeatModel extends Equatable {
 
   factory SeatModel.fromJson(Map<String, dynamic> json) => SeatModel(
         name: json["name"] as String,
+        icon: json["icon"] as String,
         isWindowSeat: json["isWindowSeat"] as bool,
         isFoldingSeat: json["isFoldingSeat"] as bool,
         isReadingLights: json["isReadingLights"] as bool,
@@ -39,6 +42,7 @@ class SeatModel extends Equatable {
 
   Map<String, dynamic> toJson() => {
         "name": name,
+        "icon": icon,
         "isWindowSeat": isWindowSeat,
         "isFoldingSeat": isFoldingSeat,
         "isReadingLights": isReadingLights,
@@ -52,6 +56,7 @@ class SeatModel extends Equatable {
   @override
   List<Object?> get props => [
         name,
+        icon,
         isWindowSeat,
         isFoldingSeat,
         isReadingLights,
@@ -64,6 +69,6 @@ class SeatModel extends Equatable {
 
   @override
   String toString() {
-    return "SeatModel(name: $name, isWindowSeat: $isWindowSeat, isFoldingSeat: $isFoldingSeat, isReadingLights: $isReadingLights, coordinate: ${coordinate.toString()})";
+    return "SeatModel(name: $name, icon: $icon, isWindowSeat: $isWindowSeat, isFoldingSeat: $isFoldingSeat, isReadingLights: $isReadingLights, coordinate: ${coordinate.toString()})";
   }
 }

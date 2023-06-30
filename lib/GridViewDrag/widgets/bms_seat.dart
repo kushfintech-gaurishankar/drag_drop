@@ -161,6 +161,7 @@ void bmsSeat({
 
                     SeatModel newSeat = SeatModel(
                       name: seat.name,
+                      icon: seat.icon,
                       isWindowSeat: features[0]["status"],
                       isFoldingSeat: features[1]["status"],
                       isReadingLights: features[2]["status"],

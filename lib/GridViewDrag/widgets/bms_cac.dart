@@ -1,7 +1,4 @@
-import 'package:drag_drop/GridViewDrag/cubit/drag_drop_cubit.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-
 void bmsCAC({
   required BuildContext mainContext,
   required double crossAxisCount,
@@ -39,8 +36,6 @@ void bmsCAC({
               ElevatedButton(
                 onPressed: () {
                   Navigator.pop(builder);
-                  BlocProvider.of<DragDropCubit>(mainContext)
-                      .newDimensions(cAC.toInt());
                 },
                 child: const Text("Save"),
               ),

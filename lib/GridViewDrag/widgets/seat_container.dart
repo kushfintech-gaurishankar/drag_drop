@@ -5,103 +5,122 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../cubit/drag_drop_cubit.dart';
 import 'bms_seat.dart';
 
-Container sCList({
+Stack sCList({
   required BuildContext context,
+  required double paddingH,
   required int gridGap,
-  required double seatTypeS,
-  required double mAll,
-  required double mBottom,
-  required double sWidth,
+  required double gridTM,
+  required double gridBM,
   required ScrollController sController,
   required double gridHeight,
   required int crossAxisCount,
   required int mainAxisCount,
-  required int gridLength,
   required List<SeatModel> seats,
 }) {
-  return Container(
-    margin: EdgeInsets.only(
-      top: seatTypeS + mAll,
-      left: mAll,
-      right: mAll,
-      bottom: mBottom,
-    ),
-    width: sWidth,
-    child: SingleChildScrollView(
-      controller: sController,
-      child: SizedBox(
+  return Stack(
+    children: [
+      Padding(
+        padding: EdgeInsets.only(left: paddingH),
+        child: const Text("Lower Decker"),
+      ),
+      Container(
+        margin: EdgeInsets.only(top: gridTM, bottom: gridBM),
+        padding: EdgeInsets.symmetric(horizontal: paddingH),
+        width: double.maxFinite,
         height: gridHeight,
-        child: Stack(
-          children: [
-            GridView.count(
-              physics: const NeverScrollableScrollPhysics(),
-              shrinkWrap: true,
-              crossAxisCount: crossAxisCount,
-              children: List.generate(gridLength, (index) {
-                return Container(
-                  decoration: BoxDecoration(
-                    border: Border.all(
-                      width: 1,
-                      color: Colors.black.withOpacity(.15),
-                    ),
-                  ),
-                );
-              }),
+        color: Colors.white,
+        child: SingleChildScrollView(
+          controller: sController,
+          child: SizedBox(
+            height: (mainAxisCount * gridGap).toDouble(),
+            child: Stack(
+              children: [
+                GridView.count(
+                  physics: const NeverScrollableScrollPhysics(),
+                  shrinkWrap: true,
+                  crossAxisCount: crossAxisCount,
+                  children:
+                      List.generate(mainAxisCount * crossAxisCount, (index) {
+                    return Container(
+                      decoration: BoxDecoration(
+                        border: Border.all(
+                          width: 1,
+                          color: Colors.black.withOpacity(.15),
+                        ),
+                      ),
+                    );
+                  }),
+                ),
+                Stack(
+                  children: (List.generate(seats.length, (index) {
+                    return Positioned(
+                      left: seats[index].coordinate.dx,
+                      top: seats[index].coordinate.dy,
+                      child: GestureDetector(
+                        onTap: () => bmsSeat(
+                          mainContext: context,
+                          seat: seats[index],
+                          mainIndex: index,
+                          mainAxisCount: mainAxisCount,
+                          crossAxisCount: crossAxisCount,
+                          gridGap: gridGap,
+                        ),
+                        child: LongPressDraggable(
+                          delay: const Duration(milliseconds: 100),
+                          onDragEnd: (DraggableDetails details) =>
+                              BlocProvider.of<DragDropCubit>(context)
+                                ..updatePosition(
+                                    index: index, details: details),
+                          childWhenDragging: seatContainer(
+                              seat: seats[index], isBordered: false),
+                          feedback: seatContainer(
+                              seat: seats[index], isBordered: true),
+                          child: seatContainer(
+                              seat: seats[index], isBordered: false),
+                        ),
+                      ),
+                    );
+                  })),
+                ),
+              ],
             ),
-            Stack(
-              children: (List.generate(seats.length, (index) {
-                return Positioned(
-                  left: seats[index].coordinate.dx,
-                  top: seats[index].coordinate.dy,
-                  child: GestureDetector(
-                    onTap: () => bmsSeat(
-                      mainContext: context,
-                      seat: seats[index],
-                      mainIndex: index,
-                      mainAxisCount: mainAxisCount,
-                      crossAxisCount: crossAxisCount,
-                      gridGap: gridGap,
-                    ),
-                    child: LongPressDraggable(
-                      delay: const Duration(milliseconds: 100),
-                      onDragEnd: (DraggableDetails details) =>
-                          BlocProvider.of<DragDropCubit>(context)
-                            ..updatePosition(index: index, details: details),
-                      childWhenDragging: seatContainer(seats[index]),
-                      feedback: seatContainer(seats[index]),
-                      child: seatContainer(seats[index]),
-                    ),
-                  ),
-                );
-              })),
-            ),
-          ],
+          ),
         ),
       ),
-    ),
+    ],
   );
 }
 
-Container seatContainer(SeatModel seat) {
+Container seatContainer({
+  required SeatModel seat,
+  required bool isBordered,
+}) {
   return Container(
     height: seat.height,
     width: seat.width,
     decoration: BoxDecoration(
       color: seat.isFoldingSeat ? Colors.blue : Colors.white,
       borderRadius: BorderRadius.circular(5),
-      border: Border.all(
-        color: seat.isWindowSeat ? Colors.green : Colors.black,
-      ),
+      border: isBordered
+          ? Border.all(
+              color: seat.isWindowSeat ? Colors.green : Colors.black,
+            )
+          : null,
     ),
-    child: Center(
-      child: Text(
-        seat.name,
-        style: TextStyle(
-          color: seat.isReadingLights ? Colors.deepOrange : Colors.black,
-          fontSize: 16,
-          decoration: TextDecoration.none,
+    child: Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Flexible(child: Image(image: AssetImage(seat.icon))),
+        const SizedBox(height: 5),
+        Text(
+          seat.name,
+          style: const TextStyle(
+            color: Colors.black,
+            fontSize: 12,
+            decoration: TextDecoration.none,
+          ),
         ),
-      ),
+      ],
     ),
   );
 }
