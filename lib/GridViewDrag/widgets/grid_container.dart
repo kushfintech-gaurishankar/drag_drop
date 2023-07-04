@@ -34,119 +34,115 @@ class GridContainer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Stack(
-      children: [
-        SizedBox(
-          width: double.maxFinite,
-          height: gridHeight,
-          child: SingleChildScrollView(
-            controller: sController,
-            child: SizedBox(
-              height: (mainAxisCount * gridGap).toDouble(),
-              child: Stack(
-                children: [
-                  GridView.count(
-                    padding: EdgeInsets.only(left: paddingH, right: paddingH),
-                    physics: const NeverScrollableScrollPhysics(),
-                    shrinkWrap: true,
-                    crossAxisCount: crossAxisCount,
-                    children:
-                        List.generate(mainAxisCount * crossAxisCount, (index) {
-                      return Container(
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          border: Border.all(
-                            width: 1,
-                            color: Colors.black.withOpacity(.15),
+    return SizedBox(
+      width: double.maxFinite,
+      height: gridHeight,
+      child: SingleChildScrollView(
+        controller: sController,
+        child: SizedBox(
+          height: (mainAxisCount * gridGap).toDouble(),
+          child: Stack(
+            children: [
+              GridView.count(
+                padding: EdgeInsets.only(left: paddingH, right: paddingH),
+                physics: const NeverScrollableScrollPhysics(),
+                shrinkWrap: true,
+                crossAxisCount: crossAxisCount,
+                children:
+                    List.generate(mainAxisCount * crossAxisCount, (index) {
+                  return Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      border: Border.all(
+                        width: 1,
+                        color: Colors.black.withOpacity(.15),
+                      ),
+                    ),
+                  );
+                }),
+              ),
+              Container(
+                margin: EdgeInsets.symmetric(horizontal: paddingH),
+                child: Stack(
+                  children: List.generate(
+                    seats.length,
+                    (index) {
+                      return Positioned(
+                        left: seats[index].coordinate.dx,
+                        top: seats[index].coordinate.dy,
+                        child: GestureDetector(
+                          onTap: () => bmsSeat(
+                            mainContext: context,
+                            seat: seats[index],
+                            mainIndex: index,
+                            mainAxisCount: mainAxisCount,
+                            crossAxisCount: crossAxisCount,
+                            gridGap: gridGap,
+                          ),
+                          child: LongPressDraggable(
+                            delay: const Duration(milliseconds: 100),
+                            onDragEnd: (DraggableDetails details) =>
+                                BlocProvider.of<DragDropCubit>(context)
+                                  ..updateSeatPosition(
+                                    index: index,
+                                    details: details,
+                                  ),
+                            childWhenDragging:
+                                seat(seat: seats[index], border: false),
+                            feedback:
+                                seat(seat: seats[index], border: true),
+                            child: seat(seat: seats[index], border: false),
                           ),
                         ),
                       );
-                    }),
+                    },
                   ),
-                  Container(
-                    margin: EdgeInsets.symmetric(horizontal: paddingH),
-                    child: Stack(
-                      children: List.generate(
-                        seats.length,
-                        (index) {
-                          return Positioned(
-                            left: seats[index].coordinate.dx,
-                            top: seats[index].coordinate.dy,
-                            child: GestureDetector(
-                              onTap: () => bmsSeat(
-                                mainContext: context,
-                                seat: seats[index],
-                                mainIndex: index,
-                                mainAxisCount: mainAxisCount,
-                                crossAxisCount: crossAxisCount,
-                                gridGap: gridGap,
-                              ),
-                              child: LongPressDraggable(
-                                delay: const Duration(milliseconds: 100),
-                                onDragEnd: (DraggableDetails details) =>
-                                    BlocProvider.of<DragDropCubit>(context)
-                                      ..updateSeatPosition(
-                                        index: index,
-                                        details: details,
-                                      ),
-                                childWhenDragging:
-                                    seat(seat: seats[index], border: false),
-                                feedback:
-                                    seat(seat: seats[index], border: true),
-                                child: seat(seat: seats[index], border: false),
-                              ),
-                            ),
-                          );
-                        },
-                      ),
-                    ),
-                  ),
-                  Stack(
-                    children: List.generate(wheels.length, (index) {
-                      return Positioned(
-                        left: wheels[index].coordinate.dx,
-                        top: wheels[index].coordinate.dy,
-                        child: LongPressDraggable(
-                          delay: const Duration(milliseconds: 100),
-                          onDragEnd: (DraggableDetails details) =>
-                              BlocProvider.of<DragDropCubit>(context)
-                                ..updateWheelPosition(
-                                  index: index,
-                                  details: details,
-                                ),
-                          childWhenDragging: wheel(wheels[index]),
-                          feedback: wheel(wheels[index]),
-                          child: wheel(wheels[index]),
-                        ),
-                      );
-                    }),
-                  ),
-                  Stack(
-                    children: List.generate(doors.length, (index) {
-                      return Positioned(
-                        left: doors[index].coordinate.dx,
-                        top: doors[index].coordinate.dy,
-                        child: LongPressDraggable(
-                          delay: const Duration(milliseconds: 100),
-                          onDragEnd: (DraggableDetails details) =>
-                              BlocProvider.of<DragDropCubit>(context)
-                                ..updateDoorPosition(
-                                  index: index,
-                                  details: details,
-                                ),
-                          childWhenDragging: door(doors[index]),
-                          feedback: door(doors[index]),
-                          child: door(doors[index]),
-                        ),
-                      );
-                    }),
-                  ),
-                ],
+                ),
               ),
-            ),
+              Stack(
+                children: List.generate(wheels.length, (index) {
+                  return Positioned(
+                    left: wheels[index].coordinate.dx,
+                    top: wheels[index].coordinate.dy,
+                    child: LongPressDraggable(
+                      delay: const Duration(milliseconds: 100),
+                      onDragEnd: (DraggableDetails details) =>
+                          BlocProvider.of<DragDropCubit>(context)
+                            ..updateWheelPosition(
+                              index: index,
+                              details: details,
+                            ),
+                      childWhenDragging: wheel(wheels[index]),
+                      feedback: wheel(wheels[index]),
+                      child: wheel(wheels[index]),
+                    ),
+                  );
+                }),
+              ),
+              Stack(
+                children: List.generate(doors.length, (index) {
+                  return Positioned(
+                    left: doors[index].coordinate.dx,
+                    top: doors[index].coordinate.dy,
+                    child: LongPressDraggable(
+                      delay: const Duration(milliseconds: 100),
+                      onDragEnd: (DraggableDetails details) =>
+                          BlocProvider.of<DragDropCubit>(context)
+                            ..updateDoorPosition(
+                              index: index,
+                              details: details,
+                            ),
+                      childWhenDragging: door(doors[index]),
+                      feedback: door(doors[index]),
+                      child: door(doors[index]),
+                    ),
+                  );
+                }),
+              ),
+            ],
           ),
         ),
-      ],
+      ),
     );
   }
 

@@ -2,6 +2,7 @@ import 'package:drag_drop/GridViewDrag/model/coordinate_model.dart';
 import 'package:equatable/equatable.dart';
 
 class SeatModel extends Equatable {
+  final int id;
   final String name;
   final String icon;
   final bool isWindowSeat;
@@ -14,6 +15,7 @@ class SeatModel extends Equatable {
   final CoordinateModel coordinate;
 
   const SeatModel({
+    required this.id,
     required this.name,
     required this.icon,
     required this.isWindowSeat,
@@ -27,6 +29,7 @@ class SeatModel extends Equatable {
   });
 
   factory SeatModel.fromJson(Map<String, dynamic> json) => SeatModel(
+        id: json["id"] as int,
         name: json["name"] as String,
         icon: json["icon"] as String,
         isWindowSeat: json["isWindowSeat"] as bool,
@@ -41,6 +44,7 @@ class SeatModel extends Equatable {
       );
 
   Map<String, dynamic> toJson() => {
+        "id": id,
         "name": name,
         "icon": icon,
         "isWindowSeat": isWindowSeat,
@@ -55,6 +59,7 @@ class SeatModel extends Equatable {
 
   @override
   List<Object?> get props => [
+        id,
         name,
         icon,
         isWindowSeat,
@@ -69,6 +74,6 @@ class SeatModel extends Equatable {
 
   @override
   String toString() {
-    return "SeatModel(name: $name, icon: $icon, isWindowSeat: $isWindowSeat, isFoldingSeat: $isFoldingSeat, isReadingLights: $isReadingLights, coordinate: ${coordinate.toString()})";
+    return "SeatModel(id: $id,, name: $name, icon: $icon, isWindowSeat: $isWindowSeat, isFoldingSeat: $isFoldingSeat, isReadingLights: $isReadingLights, coordinate: ${coordinate.toString()})";
   }
 }

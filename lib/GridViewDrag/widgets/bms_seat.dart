@@ -160,6 +160,7 @@ void bmsSeat({
                     if (noChange) return;
 
                     SeatModel newSeat = SeatModel(
+                      id: seat.id,
                       name: seat.name,
                       icon: seat.icon,
                       isWindowSeat: features[0]["status"],

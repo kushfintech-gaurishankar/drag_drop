@@ -177,6 +177,7 @@ class DragDropCubit extends Cubit<DragDropState> {
           double nW = (seat.widthInch / vWidth) * gridWidth;
 
           return SeatModel(
+            id: seat.id,
             name: seat.name,
             icon: seat.icon,
             isWindowSeat: seat.isWindowSeat,
@@ -215,6 +216,7 @@ class DragDropCubit extends Cubit<DragDropState> {
           double nDy = (seat.coordinate.dy / prevGG) * gridGap;
 
           return SeatModel(
+            id: seat.id,
             name: seat.name,
             icon: seat.icon,
             isWindowSeat: seat.isWindowSeat,
@@ -252,6 +254,7 @@ class DragDropCubit extends Cubit<DragDropState> {
           double nDy = (seat.coordinate.dy / prevGG) * gridGap;
 
           return SeatModel(
+            id: seat.id,
             name: seat.name,
             icon: seat.icon,
             isWindowSeat: seat.isWindowSeat,
@@ -362,6 +365,7 @@ class DragDropCubit extends Cubit<DragDropState> {
     List<SeatModel> seatModels = seats.toList();
 
     seatModels.add(SeatModel(
+      id: seats.length + 1,
       name: sType.name,
       icon: sType.icon,
       isWindowSeat: false,
@@ -440,7 +444,7 @@ class DragDropCubit extends Cubit<DragDropState> {
       double w = seats[i].width;
 
       // Not checking with the same widget
-      if (cn.dx != prevLeft || cn.dy != prevTop) {
+      if (seats[i].id != seat.id) {
         bool xExist = cn.dx <= left && left < cn.dx + w ||
             left <= cn.dx && cn.dx < left + seat.width;
         bool yExist = cn.dy <= top && top < cn.dy + h ||
@@ -466,6 +470,7 @@ class DragDropCubit extends Cubit<DragDropState> {
     List<SeatModel> seatModels = seats.toList();
 
     seatModels[index] = SeatModel(
+      id: seats[index].id,
       name: seats[index].name,
       icon: seats[index].icon,
       isWindowSeat: seats[index].isWindowSeat,
@@ -531,6 +536,7 @@ class DragDropCubit extends Cubit<DragDropState> {
 
     List<SeatModel> tempSeats = seats.toList();
     tempSeats[index] = SeatModel(
+      id: seat.id,
       name: seat.name,
       icon: seat.icon,
       isWindowSeat: seat.isWindowSeat,
@@ -587,6 +593,7 @@ class DragDropCubit extends Cubit<DragDropState> {
     List<SeatModel> seatModels = wheels.toList();
 
     seatModels.add(SeatModel(
+      id: wheels.length + 1,
       name: sType.name,
       icon: sType.icon,
       isWindowSeat: false,
@@ -624,7 +631,7 @@ class DragDropCubit extends Cubit<DragDropState> {
       CoordinateModel cn = wheels[i].coordinate;
       double h = wheels[i].height;
 
-      if (seat.coordinate.dx != cn.dx) {
+      if (seat.id != wheels[i].id) {
         bool yExist = cn.dy <= top && top < cn.dy + h ||
             top <= cn.dy && cn.dy < top + seat.height;
 
@@ -635,6 +642,7 @@ class DragDropCubit extends Cubit<DragDropState> {
     List<SeatModel> seatModels = wheels.toList();
 
     seatModels[index] = SeatModel(
+      id: seat.id,
       name: seat.name,
       icon: seat.icon,
       isWindowSeat: false,
@@ -707,6 +715,7 @@ class DragDropCubit extends Cubit<DragDropState> {
     List<SeatModel> seatModels = doors.toList();
 
     seatModels.add(SeatModel(
+      id: doors.length + 1,
       name: sType.name,
       icon: sType.icon,
       isWindowSeat: false,
@@ -752,10 +761,12 @@ class DragDropCubit extends Cubit<DragDropState> {
       CoordinateModel cn = doors[i].coordinate;
       double h = doors[i].height;
 
-      bool yExist = cn.dy <= top && top < cn.dy + h ||
-          top <= cn.dy && cn.dy < top + seat.height;
+      if (doors[i].id != seat.id) {
+        bool yExist = cn.dy <= top && top < cn.dy + h ||
+            top <= cn.dy && cn.dy < top + seat.height;
 
-      if (yExist && left == doors[i].coordinate.dx) return;
+        if (yExist && left == doors[i].coordinate.dx) return;
+      }
     }
 
     for (int i = 0; i < wheels.length; i++) {
@@ -771,6 +782,7 @@ class DragDropCubit extends Cubit<DragDropState> {
     List<SeatModel> seatModels = doors.toList();
 
     seatModels[index] = SeatModel(
+      id: seat.id,
       name: seat.name,
       icon: seat.icon,
       isWindowSeat: false,
