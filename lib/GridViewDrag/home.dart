@@ -1,5 +1,6 @@
 import 'package:drag_drop/GridViewDrag/cubit/drag_drop_cubit.dart';
-import 'package:drag_drop/GridViewDrag/widgets/seat_container.dart';
+import 'package:drag_drop/GridViewDrag/widgets/buttons.dart';
+import 'package:drag_drop/GridViewDrag/widgets/grid_container.dart';
 import 'package:drag_drop/GridViewDrag/widgets/seat_type_container.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -17,7 +18,7 @@ class _HomeState extends State<Home> {
     return BlocProvider(
       create: (builder) => DragDropCubit(context)
         ..widgetAlignment()
-        ..checkSeats(),
+        ..checkData(),
       child: Scaffold(
         backgroundColor: const Color(0xFFF2F4F7),
         appBar: AppBar(
@@ -48,56 +49,37 @@ class _HomeState extends State<Home> {
             if (state is DragDrop) {
               return Column(
                 children: [
-                  sTCList(
-                    context: context,
-                    gridGap: state.gridGap,
+                  SeatTypeContainer(
                     crossAxisCount: state.crossAxisCount,
-                    vWidth: state.vWidth,
-                    seatTypeH: state.seatTypeH,
                     paddingH: state.paddingH,
+                    gridGap: state.gridGap,
+                    vWidth: state.vWidth,
+                    height: state.seatTypeH,
                     sTypes: state.sTypes,
                   ),
-                  sCList(
-                    context: context,
-                    paddingH: state.paddingH,
-                    gridGap: state.gridGap,
-                    gridTM: state.gridTM,
-                    gridBM: state.gridBM,
-                    sController: state.sController,
-                    gridHeight: state.gridHeight,
-                    crossAxisCount: state.crossAxisCount,
-                    mainAxisCount: state.mainAxisCount,
-                    seats: state.seats,
+                  Column(
+                    children: [
+                      Container(
+                        height: state.gridTM,
+                        padding:
+                            EdgeInsets.only(left: state.paddingH, bottom: 5),
+                        alignment: Alignment.bottomLeft,
+                        child: const Text("Lower Decker"),
+                      ),
+                      GridContainer(
+                        paddingH: state.paddingH,
+                        gridGap: state.gridGap,
+                        sController: state.sController,
+                        gridHeight: state.gridHeight,
+                        crossAxisCount: state.crossAxisCount,
+                        mainAxisCount: state.mainAxisCount,
+                        seats: state.seats,
+                        otherSeats: state.otherSeats,
+                      ),
+                      SizedBox(height: state.gridBM),
+                    ],
                   ),
-                  SizedBox(
-                    height: state.buttonH,
-                    width: double.maxFinite,
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceAround,
-                      children: [
-                        ElevatedButton(
-                          onPressed: () {},
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0XFF6941C6),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(5),
-                            ),
-                          ),
-                          child: const Text("Save Draft"),
-                        ),
-                        ElevatedButton(
-                          onPressed: () {},
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0XFF6941C6),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(5),
-                            ),
-                          ),
-                          child: const Text("Next"),
-                        )
-                      ],
-                    ),
-                  )
+                  GridButtons(height: state.buttonH),
                 ],
               );
             }

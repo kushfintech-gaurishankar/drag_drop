@@ -19,23 +19,31 @@ class DragDropCubit extends Cubit<DragDropState> {
     SeatTypeModel(
       name: "A1",
       icon: "asset/images/a1.png",
-      height: 6,
-      width: 6,
+      height: 5,
+      width: 5,
     ),
     SeatTypeModel(
-      name: "wheel",
+      name: "Driver",
+      icon: "asset/images/driver.png",
+      height: 5,
+      width: 5,
+    ),
+    SeatTypeModel(
+      name: "Wheel",
       icon: "asset/images/wheel.png",
-      height: 9,
-      width: 8,
+      height: 3,
+      width: 3,
     ),
     SeatTypeModel(
       name: "Door",
       icon: "asset/images/door.png",
-      height: 7,
-      width: 5,
+      height: 4,
+      width: 4,
     ),
   ];
   List<SeatModel> seats = [];
+  List<SeatModel> otherSeats = [];
+  List<SeatModel> doors = [];
 
   late final double sHeight;
   late final double sWidth;
@@ -44,9 +52,9 @@ class DragDropCubit extends Cubit<DragDropState> {
 
   int crossAxisCount = 25;
   double vWidth = 48;
-  double paddingH = 10;
   double gridTM = 20;
 
+  late double paddingH;
   late int gridGap;
   late double seatTypeH;
   late double buttonH;
@@ -62,9 +70,10 @@ class DragDropCubit extends Cubit<DragDropState> {
     appBarHeight = AppBar().preferredSize.height;
 
     // Grid Spacing, Draggable Container Height, button height
-    gridGap = (sWidth ~/ crossAxisCount);
-    paddingH = (sWidth % crossAxisCount) / 2;
-    seatTypeH = sHeight * .1;
+    paddingH = sWidth * .035;
+    gridGap = ((sWidth - paddingH * 2) ~/ crossAxisCount);
+    paddingH += ((sWidth - paddingH * 2) % crossAxisCount) / 2;
+    seatTypeH = sHeight * .12;
     buttonH = sHeight * .05;
 
     double vSpacing = appBarHeight + seatTypeH + buttonH + gridTM;
@@ -92,6 +101,7 @@ class DragDropCubit extends Cubit<DragDropState> {
         gridBM: gridBM,
         sTypes: sTypes,
         seats: seats,
+        otherSeats: otherSeats,
         vWidth: vWidth,
       );
 
@@ -101,6 +111,7 @@ class DragDropCubit extends Cubit<DragDropState> {
 
   clearData() {
     seats = [];
+    otherSeats = [];
     double vSpacing = appBarHeight + seatTypeH + buttonH + gridTM + gridBM;
     double gridWithVM = sHeight - vSpacing;
     mainAxisCount = gridWithVM ~/ gridGap;
@@ -109,10 +120,11 @@ class DragDropCubit extends Cubit<DragDropState> {
     emit(_getState);
   }
 
-  checkSeats() async {
+  checkData() async {
     // Saved widgets data
     gridBox = await Hive.openBox("Grid");
     String? seatsData = gridBox.get("seats");
+    String? otherSeatData = gridBox.get("otherSeats");
     String? dimensions = gridBox.get("dimensions");
 
     if (seatsData != null) {
@@ -136,8 +148,8 @@ class DragDropCubit extends Cubit<DragDropState> {
             double nDy = (seat.coordinate.dy / prevGG) * gridGap;
 
             // New Size
-            double nH = (seat.height / prevGG) * gridGap;
-            double nW = (seat.width / prevGG) * gridGap;
+            double nH = (seat.heightInch / vWidth) * gridWidth;
+            double nW = (seat.widthInch / vWidth) * gridWidth;
 
             return SeatModel(
               name: seat.name,
@@ -161,6 +173,48 @@ class DragDropCubit extends Cubit<DragDropState> {
           await gridBox.put(
             "seats",
             jsonEncode(seats.map((e) => e.toJson()).toList()),
+          );
+        }
+      }
+    }
+
+    if (otherSeatData != null) {
+      List<dynamic> list = jsonDecode(otherSeatData) as List;
+      otherSeats = list.map((e) => SeatModel.fromJson(e)).toList();
+      if (dimensions != null) {
+        Map<String, dynamic> gD = jsonDecode(dimensions);
+        int prevGG = gD["gridGap"];
+
+        if (prevGG != gridGap) {
+          List<SeatModel> newSeats = otherSeats.map((seat) {
+            double nH = (seat.heightInch / vWidth) * gridWidth;
+            double nW = (seat.widthInch / vWidth) * gridWidth;
+
+            double nDx = paddingH - nW / 2;
+            double nDy = (seat.coordinate.dy / prevGG) * gridGap;
+
+            return SeatModel(
+              name: seat.name,
+              icon: seat.icon,
+              isWindowSeat: seat.isWindowSeat,
+              isFoldingSeat: seat.isFoldingSeat,
+              isReadingLights: seat.isReadingLights,
+              height: nH,
+              width: nW,
+              heightInch: seat.heightInch,
+              widthInch: seat.widthInch,
+              coordinate: CoordinateModel(
+                dx: nDx,
+                dy: nDy,
+              ),
+            );
+          }).toList();
+
+          otherSeats = newSeats;
+
+          await gridBox.put(
+            "otherSeats",
+            jsonEncode(otherSeats.map((e) => e.toJson()).toList()),
           );
         }
       }
@@ -195,7 +249,7 @@ class DragDropCubit extends Cubit<DragDropState> {
     // New x coordinate of the dragged Widget
     double newLeft = details.offset.dx - paddingH;
     // The max x coordinate to which it can be moved
-    double maxLeft = gridWidth - seatW - paddingH * 2;
+    double maxLeft = gridWidth - seatW;
     // final x coordinate inside the grid view
     double left = max(0, min(maxLeft, newLeft));
 
@@ -271,7 +325,7 @@ class DragDropCubit extends Cubit<DragDropState> {
     );
   }
 
-  updatePosition({
+  updateSeatPosition({
     required int index,
     required DraggableDetails details,
   }) async {
@@ -279,7 +333,7 @@ class DragDropCubit extends Cubit<DragDropState> {
 
     double prevLeft = seat.coordinate.dx;
     double newLeft = details.offset.dx - paddingH;
-    double maxLeft = sWidth - seat.width - paddingH * 2;
+    double maxLeft = gridWidth - seat.width;
     double left = max(0, min(maxLeft, newLeft));
 
     double prevTop = seat.coordinate.dy;
@@ -290,35 +344,33 @@ class DragDropCubit extends Cubit<DragDropState> {
 
     if (left != 0) {
       // Not modifying if the dragged widget touches the border
-      double leftDif = left - prevLeft;
-      if (leftDif < 0) {
-        if ((leftDif * -1) % gridGap >= gridGap / 2) {
-          left = left - (leftDif % gridGap);
+      if (left - prevLeft < 0) {
+        if (left % gridGap >= gridGap / 2) {
+          left = left - (left % gridGap) + gridGap;
         } else {
-          left = left - (leftDif % gridGap) + gridGap;
+          left = left - (left % gridGap);
         }
       } else {
-        if (leftDif % gridGap >= gridGap / 2) {
-          left = left - (leftDif % gridGap) + gridGap;
+        if ((left + seat.width) % gridGap >= gridGap / 2) {
+          left = left - ((left + seat.width) % gridGap) + gridGap;
         } else {
-          left = left - (leftDif % gridGap);
+          left = left - ((left + seat.width) % gridGap);
         }
       }
     }
 
     if (top != 0) {
-      double topDif = top - prevTop;
-      if (topDif < 0) {
-        if ((topDif * -1) % gridGap >= gridGap / 2) {
-          top = top - (topDif % gridGap);
+      if (top - prevTop < 0) {
+        if (top % gridGap >= gridGap / 2) {
+          top = top - (top % gridGap) + gridGap;
         } else {
-          top = top - (topDif % gridGap) + gridGap;
+          top = top - (top % gridGap);
         }
       } else {
-        if (topDif % gridGap >= gridGap / 2) {
-          top = top - (topDif % gridGap) + gridGap;
+        if ((top + seat.height) % gridGap >= gridGap / 2) {
+          top = top - ((top + seat.height) % gridGap) + gridGap;
         } else {
-          top = top - (topDif % gridGap);
+          top = top - ((top + seat.height) % gridGap);
         }
       }
     }
@@ -438,6 +490,168 @@ class DragDropCubit extends Cubit<DragDropState> {
     await gridBox.put(
       "seats",
       jsonEncode(seats.map((e) => e.toJson()).toList()),
+    );
+  }
+
+  addWheel({
+    required SeatTypeModel sType,
+    required DraggableDetails details,
+  }) async {
+    double seatH =
+        double.parse(((sType.height / vWidth) * gridWidth).toStringAsFixed(2));
+    double seatW =
+        double.parse(((sType.width / vWidth) * gridWidth).toStringAsFixed(2));
+
+    // Checking if the dragged widget touches the grid area or not
+    if (details.offset.dy + seatH - (seatH / 4) <
+        (appBarHeight + seatTypeH + gridTM)) {
+      return;
+    }
+
+    // Adding the y coordinate scroll offset to position it in right place
+    double yOffset = details.offset.dy + sController.offset;
+    double newTop = yOffset - (appBarHeight + seatTypeH + gridTM);
+    double maxTop = gridSH - seatH;
+    double top = max(0, min(maxTop, newTop));
+
+    // Checking if the dragged widget collides with other widgets inside the grid area or not
+    for (int i = 0; i < otherSeats.length; i++) {
+      CoordinateModel cn = otherSeats[i].coordinate;
+      double h = otherSeats[i].height;
+
+      bool yExist = cn.dy <= top && top < cn.dy + h ||
+          top <= cn.dy && cn.dy < top + seatH;
+
+      if (yExist) return;
+    }
+
+    List<SeatModel> seatModels = otherSeats.toList();
+
+    seatModels.add(SeatModel(
+      name: sType.name,
+      icon: sType.icon,
+      isWindowSeat: false,
+      isFoldingSeat: false,
+      isReadingLights: false,
+      height: seatH,
+      width: seatW,
+      heightInch: sType.height,
+      widthInch: sType.width,
+      coordinate: CoordinateModel(dx: paddingH - seatW / 2, dy: top),
+    ));
+
+    otherSeats = seatModels;
+
+    emit(_getState);
+
+    await gridBox.put(
+      "otherSeats",
+      jsonEncode(otherSeats.map((e) => e.toJson()).toList()),
+    );
+  }
+
+  updateWheelPosition({
+    required int index,
+    required DraggableDetails details,
+  }) async {
+    SeatModel seat = otherSeats[index];
+
+    double yOffset = details.offset.dy + sController.offset;
+    double newTop = yOffset - (appBarHeight + seatTypeH + gridTM);
+    double maxTop = gridSH - seat.height;
+    double top = max(0, min(maxTop, newTop));
+
+    for (int i = 0; i < otherSeats.length; i++) {
+      CoordinateModel cn = otherSeats[i].coordinate;
+      double h = otherSeats[i].height;
+
+      if (seat.coordinate.dx != cn.dx) {
+        bool yExist = cn.dy <= top && top < cn.dy + h ||
+            top <= cn.dy && cn.dy < top + seat.height;
+
+        if (yExist) return;
+      }
+    }
+
+    List<SeatModel> seatModels = otherSeats.toList();
+
+    seatModels[index] = SeatModel(
+      name: seat.name,
+      icon: seat.icon,
+      isWindowSeat: false,
+      isFoldingSeat: false,
+      isReadingLights: false,
+      height: seat.height,
+      width: seat.width,
+      heightInch: seat.heightInch,
+      widthInch: seat.widthInch,
+      coordinate: CoordinateModel(dx: seat.coordinate.dx, dy: top),
+    );
+
+    otherSeats = seatModels;
+
+    emit(_getState);
+
+    await gridBox.put(
+      "otherSeats",
+      jsonEncode(otherSeats.map((e) => e.toJson()).toList()),
+    );
+  }
+
+  addDoor({
+    required SeatTypeModel sType,
+    required DraggableDetails details,
+  }) async {
+    double seatH =
+        double.parse(((sType.height / vWidth) * gridWidth).toStringAsFixed(2));
+    double seatW =
+        double.parse(((sType.width / vWidth) * gridWidth).toStringAsFixed(2));
+
+    // Checking if the dragged widget touches the grid area or not
+    if (details.offset.dy + seatH - (seatH / 4) <
+        (appBarHeight + seatTypeH + gridTM)) {
+      return;
+    }
+
+    // Adding the y coordinate scroll offset to position it in right place
+    double yOffset = details.offset.dy + sController.offset;
+    double newTop = yOffset - (appBarHeight + seatTypeH + gridTM);
+    double maxTop = gridSH - seatH;
+    double top = max(0, min(maxTop, newTop));
+
+    // Checking if the dragged widget collides with other widgets inside the grid area or not
+    for (int i = 0; i < otherSeats.length; i++) {
+      CoordinateModel cn = otherSeats[i].coordinate;
+      double h = otherSeats[i].height;
+
+      bool yExist = cn.dy <= top && top < cn.dy + h ||
+          top <= cn.dy && cn.dy < top + seatH;
+
+      if (yExist) return;
+    }
+
+    List<SeatModel> seatModels = otherSeats.toList();
+
+    seatModels.add(SeatModel(
+      name: sType.name,
+      icon: sType.icon,
+      isWindowSeat: false,
+      isFoldingSeat: false,
+      isReadingLights: false,
+      height: seatH,
+      width: seatW,
+      heightInch: sType.height,
+      widthInch: sType.width,
+      coordinate: CoordinateModel(dx: paddingH - seatW / 2, dy: top),
+    ));
+
+    otherSeats = seatModels;
+
+    emit(_getState);
+
+    await gridBox.put(
+      "otherSeats",
+      jsonEncode(otherSeats.map((e) => e.toJson()).toList()),
     );
   }
 }

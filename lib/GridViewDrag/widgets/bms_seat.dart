@@ -52,8 +52,8 @@ void bmsSeat({
               mainAxisSize: MainAxisSize.min,
               children: [
                 Container(
-                  width: seat.width / gridGap * (isSmall ? 20 : 10),
-                  height: seat.height / gridGap * (isSmall ? 20 : 10),
+                  width: seat.width / gridGap * (isSmall ? 30 : 20),
+                  height: seat.height / gridGap * (isSmall ? 30 : 20),
                   margin: const EdgeInsets.only(right: 20),
                   decoration: BoxDecoration(
                     color: features[1]["status"] ? Colors.blue : Colors.white,
