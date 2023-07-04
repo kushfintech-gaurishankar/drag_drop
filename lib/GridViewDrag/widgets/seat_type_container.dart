@@ -2,6 +2,7 @@ import 'package:drag_drop/GridViewDrag/cubit/drag_drop_cubit.dart';
 import 'package:drag_drop/GridViewDrag/model/seat_type_model.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'dart:math' as math;
 
 class SeatTypeContainer extends StatelessWidget {
   final int crossAxisCount;
@@ -9,6 +10,7 @@ class SeatTypeContainer extends StatelessWidget {
   final int gridGap;
   final double vWidth;
   final double height;
+  final int angle;
   final List<SeatTypeModel> sTypes;
 
   const SeatTypeContainer({
@@ -18,6 +20,7 @@ class SeatTypeContainer extends StatelessWidget {
     required this.gridGap,
     required this.vWidth,
     required this.height,
+    required this.angle,
     required this.sTypes,
   });
 
@@ -59,8 +62,8 @@ class SeatTypeContainer extends StatelessWidget {
                   if (sType.name == "Wheel") {
                     feedback = wheel(
                       sType: sType,
-                      width: seatW,
                       height: seatH,
+                      width: seatW,
                     );
                   } else if (sType.name == "Door") {
                     feedback = door(
@@ -69,37 +72,37 @@ class SeatTypeContainer extends StatelessWidget {
                       width: seatW,
                     );
                   } else {
-                    feedback = seatType(
-                      sType: sType,
-                      isBordered: true,
-                      height: seatH,
-                      width: seatW,
-                    );
+                    feedback = seatType(sType: sType, isBordered: true);
                   }
 
-                  return LongPressDraggable(
-                    delay: const Duration(milliseconds: 100),
-                    onDragEnd: (DraggableDetails details) {
-                      if (sType.name == "Wheel") {
-                        BlocProvider.of<DragDropCubit>(context).addWheel(
-                          sType: sType,
-                          details: details,
-                        );
-                      } else if (sType.name == "Door") {
-                        BlocProvider.of<DragDropCubit>(context).addDoor(
-                          sType: sType,
-                          details: details,
-                        );
-                      } else {
-                        BlocProvider.of<DragDropCubit>(context).addSeat(
-                          sType: sType,
-                          details: details,
-                        );
-                      }
-                    },
-                    childWhenDragging: seatType(sType: sType),
-                    feedback: feedback,
-                    child: seatType(sType: sType),
+                  return Row(
+                    children: [
+                      LongPressDraggable(
+                        delay: const Duration(milliseconds: 100),
+                        onDragEnd: (DraggableDetails details) {
+                          if (sType.name == "Wheel") {
+                            BlocProvider.of<DragDropCubit>(context).addWheel(
+                              sType: sType,
+                              details: details,
+                            );
+                          } else if (sType.name == "Door") {
+                            BlocProvider.of<DragDropCubit>(context).addDoor(
+                              sType: sType,
+                              details: details,
+                            );
+                          } else {
+                            BlocProvider.of<DragDropCubit>(context).addSeat(
+                              sType: sType,
+                              details: details,
+                            );
+                          }
+                        },
+                        childWhenDragging: seatType(sType: sType),
+                        feedback: feedback,
+                        child: seatType(sType: sType),
+                      ),
+                      const SizedBox(width: 20),
+                    ],
                   );
                 }),
               ),
@@ -113,53 +116,50 @@ class SeatTypeContainer extends StatelessWidget {
             color: const Color(0XFF6941C6).withOpacity(.2),
           ),
           child: IconButton(
-            onPressed: () {},
-            icon: const Icon(
-              Icons.screen_rotation_rounded,
-              color: Color(0XFF6941C6),
-            ),
+            onPressed: () => BlocProvider.of<DragDropCubit>(context).rotate(),
+            icon: angle == 0
+                ? const Icon(Icons.refresh_rounded)
+                : const Icon(Icons.restart_alt_rounded),
+            color: const Color(0XFF6941C6),
           ),
         ),
       ],
     );
   }
 
-  Container seatType({
-    required SeatTypeModel sType,
-    bool isBordered = false,
-    double height = double.maxFinite,
-    double width = 50,
-  }) {
-    return Container(
-      height: height,
-      width: width,
-      margin: const EdgeInsets.only(right: 20),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(5),
-        border: isBordered ? Border.all(color: Colors.black) : null,
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Flexible(child: Image(image: AssetImage(sType.icon))),
-          const SizedBox(height: 5),
-          Text(
-            sType.name,
-            style: const TextStyle(
-              color: Colors.black,
-              fontSize: 12,
-              decoration: TextDecoration.none,
+  Transform seatType({required SeatTypeModel sType, bool isBordered = false}) {
+    return Transform.rotate(
+      angle: angle * math.pi / 180,
+      child: Container(
+        height: height - 55,
+        width: height - 55,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(5),
+          border: isBordered ? Border.all(color: Colors.black) : null,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Flexible(child: Image(image: AssetImage(sType.icon))),
+            const SizedBox(height: 5),
+            Text(
+              sType.name,
+              style: const TextStyle(
+                color: Colors.black,
+                fontSize: 12,
+                decoration: TextDecoration.none,
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
 
   Image door({
     required SeatTypeModel sType,
-    double height = double.maxFinite,
-    double width = 50,
+    required double height,
+    required double width,
   }) {
     return Image(
       height: height,
@@ -170,8 +170,8 @@ class SeatTypeContainer extends StatelessWidget {
 
   SizedBox wheel({
     required SeatTypeModel sType,
-    double height = double.maxFinite,
-    double width = 50,
+    required double height,
+    required double width,
   }) {
     return SizedBox(
       height: height,

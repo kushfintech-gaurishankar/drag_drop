@@ -20,9 +20,11 @@ class DragDrop extends DragDropState {
   final double paddingH;
   final double gridTM;
   final double gridBM;
+  final int angle;
   final List<SeatTypeModel> sTypes;
   final List<SeatModel> seats;
-  final List<SeatModel> otherSeats;
+  final List<SeatModel> wheels;
+  final List<SeatModel> doors;
   final double vWidth;
 
   const DragDrop({
@@ -37,15 +39,19 @@ class DragDrop extends DragDropState {
     required this.paddingH,
     required this.gridTM,
     required this.gridBM,
+    required this.angle,
     required this.sTypes,
-    required this.otherSeats,
     required this.seats,
+    required this.wheels,
+    required this.doors,
   });
 
   @override
   List<Object?> get props => [
         mainAxisCount,
+        angle,
         seats,
-        otherSeats,
+        wheels,
+        doors,
       ];
 }

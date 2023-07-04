@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../cubit/drag_drop_cubit.dart';
 import 'bms_seat.dart';
+import 'dart:math' as math;
 
 class GridContainer extends StatelessWidget {
   final double paddingH;
@@ -12,8 +13,10 @@ class GridContainer extends StatelessWidget {
   final double gridHeight;
   final int crossAxisCount;
   final int mainAxisCount;
+  final int angle;
   final List<SeatModel> seats;
-  final List<SeatModel> otherSeats;
+  final List<SeatModel> wheels;
+  final List<SeatModel> doors;
 
   const GridContainer({
     super.key,
@@ -23,8 +26,10 @@ class GridContainer extends StatelessWidget {
     required this.gridHeight,
     required this.crossAxisCount,
     required this.mainAxisCount,
+    required this.angle,
     required this.seats,
-    required this.otherSeats,
+    required this.wheels,
+    required this.doors,
   });
 
   @override
@@ -41,10 +46,7 @@ class GridContainer extends StatelessWidget {
               child: Stack(
                 children: [
                   GridView.count(
-                    padding: EdgeInsets.only(
-                      left: paddingH,
-                      right: paddingH,
-                    ),
+                    padding: EdgeInsets.only(left: paddingH, right: paddingH),
                     physics: const NeverScrollableScrollPhysics(),
                     shrinkWrap: true,
                     crossAxisCount: crossAxisCount,
@@ -62,10 +64,7 @@ class GridContainer extends StatelessWidget {
                     }),
                   ),
                   Container(
-                    margin: EdgeInsets.only(
-                      left: paddingH,
-                      right: paddingH,
-                    ),
+                    margin: EdgeInsets.symmetric(horizontal: paddingH),
                     child: Stack(
                       children: List.generate(
                         seats.length,
@@ -91,11 +90,10 @@ class GridContainer extends StatelessWidget {
                                         details: details,
                                       ),
                                 childWhenDragging:
-                                    seat(seat: seats[index], isBordered: false),
+                                    seat(seat: seats[index], border: false),
                                 feedback:
-                                    seat(seat: seats[index], isBordered: true),
-                                child:
-                                    seat(seat: seats[index], isBordered: false),
+                                    seat(seat: seats[index], border: true),
+                                child: seat(seat: seats[index], border: false),
                               ),
                             ),
                           );
@@ -104,10 +102,10 @@ class GridContainer extends StatelessWidget {
                     ),
                   ),
                   Stack(
-                    children: List.generate(otherSeats.length, (index) {
+                    children: List.generate(wheels.length, (index) {
                       return Positioned(
-                        left: otherSeats[index].coordinate.dx,
-                        top: otherSeats[index].coordinate.dy,
+                        left: wheels[index].coordinate.dx,
+                        top: wheels[index].coordinate.dy,
                         child: LongPressDraggable(
                           delay: const Duration(milliseconds: 100),
                           onDragEnd: (DraggableDetails details) =>
@@ -116,9 +114,29 @@ class GridContainer extends StatelessWidget {
                                   index: index,
                                   details: details,
                                 ),
-                          childWhenDragging: wheel(otherSeats[index]),
-                          feedback: wheel(otherSeats[index]),
-                          child: wheel(otherSeats[index]),
+                          childWhenDragging: wheel(wheels[index]),
+                          feedback: wheel(wheels[index]),
+                          child: wheel(wheels[index]),
+                        ),
+                      );
+                    }),
+                  ),
+                  Stack(
+                    children: List.generate(doors.length, (index) {
+                      return Positioned(
+                        left: doors[index].coordinate.dx,
+                        top: doors[index].coordinate.dy,
+                        child: LongPressDraggable(
+                          delay: const Duration(milliseconds: 100),
+                          onDragEnd: (DraggableDetails details) =>
+                              BlocProvider.of<DragDropCubit>(context)
+                                ..updateDoorPosition(
+                                  index: index,
+                                  details: details,
+                                ),
+                          childWhenDragging: door(doors[index]),
+                          feedback: door(doors[index]),
+                          child: door(doors[index]),
                         ),
                       );
                     }),
@@ -132,35 +150,33 @@ class GridContainer extends StatelessWidget {
     );
   }
 
-  Container seat({
-    required SeatModel seat,
-    required bool isBordered,
-  }) {
-    return Container(
-      height: seat.height,
-      width: seat.width,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(5),
-        border: isBordered
-            ? Border.all(
-                color: seat.isWindowSeat ? Colors.green : Colors.black,
-              )
-            : null,
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Flexible(child: Image(image: AssetImage(seat.icon))),
-          const SizedBox(height: 5),
-          Text(
-            seat.name,
-            style: const TextStyle(
-              color: Colors.black,
-              fontSize: 12,
-              decoration: TextDecoration.none,
-            ),
+  Transform seat({required SeatModel seat, required bool border}) {
+    return Transform.rotate(
+      angle: angle * math.pi / 180,
+      child: Container(
+        height: seat.height,
+        width: seat.width,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(5),
+          border: Border.all(
+            color: seat.isWindowSeat ? Colors.green : Colors.black,
           ),
-        ],
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Flexible(child: Image(image: AssetImage(seat.icon))),
+            const SizedBox(height: 5),
+            Text(
+              seat.name,
+              style: const TextStyle(
+                color: Colors.black,
+                fontSize: 12,
+                decoration: TextDecoration.none,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
