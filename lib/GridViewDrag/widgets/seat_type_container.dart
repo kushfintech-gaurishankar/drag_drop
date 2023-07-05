@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'dart:math' as math;
 
+import 'package:flutter_svg/flutter_svg.dart';
+
 class SeatTypeContainer extends StatelessWidget {
   final int crossAxisCount;
   final double paddingH;
@@ -12,6 +14,9 @@ class SeatTypeContainer extends StatelessWidget {
   final double height;
   final int angle;
   final List<SeatTypeModel> sTypes;
+
+  final double bM = 12.5;
+  final double bP = 18;
 
   const SeatTypeContainer({
     super.key,
@@ -34,13 +39,8 @@ class SeatTypeContainer extends StatelessWidget {
           height: height,
           width: double.maxFinite,
           child: Container(
-            margin: const EdgeInsets.only(bottom: 20),
-            padding: const EdgeInsets.only(
-              left: 10,
-              right: 10,
-              top: 10,
-              bottom: 25,
-            ),
+            margin: EdgeInsets.only(bottom: bM),
+            padding: EdgeInsets.only(left: 10, right: 10, top: 10, bottom: bP),
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(10),
@@ -72,7 +72,11 @@ class SeatTypeContainer extends StatelessWidget {
                       width: seatW,
                     );
                   } else {
-                    feedback = seatType(sType: sType, isBordered: true);
+                    feedback = seatType(
+                      sType: sType,
+                      height: seatH,
+                      width: seatW,
+                    );
                   }
 
                   return Row(
@@ -97,11 +101,19 @@ class SeatTypeContainer extends StatelessWidget {
                             );
                           }
                         },
-                        childWhenDragging: seatType(sType: sType),
+                        childWhenDragging: seatType(
+                          sType: sType,
+                          height: height - bM - bP,
+                          width: height - bM - bP,
+                        ),
                         feedback: feedback,
-                        child: seatType(sType: sType),
+                        child: seatType(
+                          sType: sType,
+                          height: height - bM - bP,
+                          width: height - bM - bP,
+                        ),
                       ),
-                      const SizedBox(width: 20),
+                      const SizedBox(width: 10),
                     ],
                   );
                 }),
@@ -109,44 +121,62 @@ class SeatTypeContainer extends StatelessWidget {
             ),
           ),
         ),
-        Container(
-          padding: const EdgeInsets.all(1),
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: const Color(0XFF6941C6).withOpacity(.2),
-          ),
-          child: IconButton(
-            onPressed: () => BlocProvider.of<DragDropCubit>(context).rotate(),
-            icon: angle == 0
-                ? const Icon(Icons.refresh_rounded)
-                : const Icon(Icons.restart_alt_rounded),
-            color: const Color(0XFF6941C6),
+        GestureDetector(
+          onTap: () => BlocProvider.of<DragDropCubit>(context).rotate(),
+          child: Container(
+            padding: const EdgeInsets.all(5),
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: const Color(0XFF6941C6).withOpacity(.2),
+            ),
+            child: angle == 0
+                ? const Icon(
+                    Icons.refresh_rounded,
+                    color: Color(0XFF6941C6),
+                    size: 20,
+                  )
+                : const Icon(
+                    Icons.restart_alt_rounded,
+                    color: Color(0XFF6941C6),
+                    size: 20,
+                  ),
           ),
         ),
       ],
     );
   }
 
-  Transform seatType({required SeatTypeModel sType, bool isBordered = false}) {
-    return Transform.rotate(
-      angle: angle * math.pi / 180,
+  AnimatedRotation seatType({
+    required SeatTypeModel sType,
+    required double height,
+    required double width,
+  }) {
+    return AnimatedRotation(
+      turns: angle == 0 ? 0 : .25,
+      duration: const Duration(milliseconds: 500),
       child: Container(
-        height: height - 55,
-        width: height - 55,
+        height: height,
+        width: width,
+        padding: const EdgeInsets.all(5),
         decoration: BoxDecoration(
+          color: Colors.grey.withOpacity(.3),
           borderRadius: BorderRadius.circular(5),
-          border: isBordered ? Border.all(color: Colors.black) : null,
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Flexible(child: Image(image: AssetImage(sType.icon))),
+            Flexible(
+              child: SvgPicture.asset(
+                sType.icon,
+                height: double.maxFinite,
+              ),
+            ),
             const SizedBox(height: 5),
             Text(
               sType.name,
               style: const TextStyle(
                 color: Colors.black,
-                fontSize: 12,
+                fontSize: 10,
                 decoration: TextDecoration.none,
               ),
             ),
@@ -156,15 +186,15 @@ class SeatTypeContainer extends StatelessWidget {
     );
   }
 
-  Image door({
+  SvgPicture door({
     required SeatTypeModel sType,
     required double height,
     required double width,
   }) {
-    return Image(
-      height: height,
+    return SvgPicture.asset(
+      sType.icon,
       width: width,
-      image: AssetImage(sType.icon),
+      height: height,
     );
   }
 
@@ -179,8 +209,8 @@ class SeatTypeContainer extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Image(width: width, image: AssetImage(sType.icon)),
-          Image(width: width, image: AssetImage(sType.icon)),
+          SvgPicture.asset(sType.icon, width: width),
+          SvgPicture.asset(sType.icon, width: width),
         ],
       ),
     );

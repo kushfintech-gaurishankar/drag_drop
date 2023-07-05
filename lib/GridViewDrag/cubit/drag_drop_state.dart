@@ -11,6 +11,7 @@ class DragDropInitial extends DragDropState {}
 
 class DragDrop extends DragDropState {
   final ScrollController sController;
+  final String name;
   final int crossAxisCount;
   final int mainAxisCount;
   final int gridGap;
@@ -29,6 +30,7 @@ class DragDrop extends DragDropState {
 
   const DragDrop({
     required this.sController,
+    required this.name,
     required this.crossAxisCount,
     required this.mainAxisCount,
     required this.gridGap,
@@ -48,6 +50,7 @@ class DragDrop extends DragDropState {
 
   @override
   List<Object?> get props => [
+        name,
         mainAxisCount,
         angle,
         seats,

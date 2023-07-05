@@ -16,11 +16,10 @@ class _HomeState extends State<Home> {
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (builder) => DragDropCubit(context)
-        ..widgetAlignment()
-        ..checkData(),
+      create: (builder) => DragDropCubit(context)..loadData(),
       child: Scaffold(
         backgroundColor: const Color(0xFFF2F4F7),
+        resizeToAvoidBottomInset: false,
         appBar: AppBar(
           backgroundColor: const Color(0xFFF2F4F7),
           elevation: 0,
@@ -58,31 +57,24 @@ class _HomeState extends State<Home> {
                     angle: state.angle,
                     sTypes: state.sTypes,
                   ),
-                  Column(
-                    children: [
-                      Container(
-                        height: state.gridTM,
-                        padding:
-                            EdgeInsets.only(left: state.paddingH, bottom: 5),
-                        alignment: Alignment.bottomLeft,
-                        child: const Text("Lower Decker"),
-                      ),
-                      GridContainer(
-                        paddingH: state.paddingH,
-                        gridGap: state.gridGap,
-                        sController: state.sController,
-                        gridHeight: state.gridHeight,
-                        crossAxisCount: state.crossAxisCount,
-                        mainAxisCount: state.mainAxisCount,
-                        angle: state.angle,
-                        seats: state.seats,
-                        wheels: state.wheels,
-                        doors: state.doors,
-                      ),
-                      SizedBox(height: state.gridBM),
-                    ],
+                  GridContainer(
+                    sController: state.sController,
+                    name: state.name,
+                    gridTM: state.gridTM,
+                    paddingH: state.paddingH,
+                    gridGap: state.gridGap,
+                    gridHeight: state.gridHeight,
+                    crossAxisCount: state.crossAxisCount,
+                    mainAxisCount: state.mainAxisCount,
+                    angle: state.angle,
+                    seats: state.seats,
+                    wheels: state.wheels,
+                    doors: state.doors, 
                   ),
-                  GridButtons(height: state.buttonH),
+                  Container(
+                    padding: EdgeInsets.symmetric(vertical: state.gridBM / 2),
+                    child: GridButtons(height: state.buttonH),
+                  ),
                 ],
               );
             }
