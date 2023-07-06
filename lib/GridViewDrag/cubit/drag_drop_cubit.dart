@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:math';
 
 import 'package:drag_drop/GridViewDrag/model/seat_type_model.dart';
+import 'package:drag_drop/GridViewDrag/model/section_model.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -15,7 +16,6 @@ part 'drag_drop_state.dart';
 class DragDropCubit extends Cubit<DragDropState> {
   final BuildContext context;
   final ScrollController sController = ScrollController();
-  String name = "Lower Decker";
   List<SeatTypeModel> sTypes = const [
     SeatTypeModel(
       name: "A1",
@@ -42,9 +42,11 @@ class DragDropCubit extends Cubit<DragDropState> {
       width: 4,
     ),
   ];
+  List<SectionModel> sections = [];
   List<SeatModel> seats = [];
   List<SeatModel> wheels = [];
   List<SeatModel> doors = [];
+  bool updateState = true;
 
   late final double sHeight;
   late final double sWidth;
@@ -88,13 +90,23 @@ class DragDropCubit extends Cubit<DragDropState> {
     // Grid Size
     gridHeight = (mainAxisCount * gridGap).toDouble();
     gridWidth = (crossAxisCount * gridGap).toDouble();
-
     gridSH = (mainAxisCount * gridGap).toDouble();
+
+    sections.add(
+      SectionModel(
+        name: "First Section",
+        seats: const [],
+        wheels: const [],
+        doors: const [],
+        mainAxisCount: mainAxisCount,
+        height: gridHeight,
+      ),
+    );
   }
 
   DragDrop get _state => DragDrop(
+        updateState: updateState,
         sController: sController,
-        name: name,
         crossAxisCount: crossAxisCount,
         mainAxisCount: mainAxisCount,
         gridGap: gridGap,
@@ -106,192 +118,223 @@ class DragDropCubit extends Cubit<DragDropState> {
         gridBM: gridBM,
         angle: angle,
         sTypes: sTypes,
+        sections: sections,
         seats: seats,
         wheels: wheels,
         doors: doors,
         vWidth: vWidth,
       );
 
-  clearData() async {
-    seats = [];
-    wheels = [];
-    doors = [];
-
-    double vSpacing = appStatusH + seatTypeH + buttonH + gridTM + gridBM;
-    double gridWithVM = sHeight - vSpacing;
-    mainAxisCount = gridWithVM ~/ gridGap;
-    gridBox.clear();
-
-    await gridBox.put(
-      "dimension",
-      jsonEncode({
-        "gridGap": gridGap,
-        "mainAxisCount": mainAxisCount,
-      }),
-    );
-
-    emit(_state);
-  }
-
   loadData() async {
     emit(_state);
 
     gridBox = await Hive.openBox("Grid");
-    String? dimension = gridBox.get("dimension");
-    String? seatsData = gridBox.get("seats");
-    String? wheelData = gridBox.get("wheels");
-    String? doorData = gridBox.get("doors");
+    int? prevGG = gridBox.get("gridGap");
+    String? sectionData = gridBox.get("sections");
 
-    if (dimension == null) {
+    if (prevGG == null) {
+      return await gridBox.put("gridGap", gridGap);
+    }
+
+    if (sectionData != null) {
+      sections = (jsonDecode(sectionData) as List)
+          .map((e) => SectionModel.fromJson(e))
+          .toList();
+
+      List<SectionModel> newSections = [];
+
+      for (int i = 0; i < sections.length; i++) {
+        SectionModel sm = sections[i];
+        List<SeatModel> newSeats = sm.seats;
+        List<SeatModel> newWheels = sm.wheels;
+        List<SeatModel> newDoors = sm.doors;
+        int newMAC = mainAxisCount;
+        double newHeight = gridHeight;
+
+        if (sm.mainAxisCount > mainAxisCount) {
+          newMAC = sm.mainAxisCount;
+          newHeight = (newMAC * gridGap).toDouble();
+        }
+
+        if (prevGG != gridGap) {
+          newSeats = sm.seats.map((seat) {
+            // New Coordinate
+            double nDx = (seat.coordinate.dx / prevGG) * gridGap;
+            double nDy = (seat.coordinate.dy / prevGG) * gridGap;
+
+            // New Size
+            double nH = (seat.heightInch / vWidth) * gridWidth;
+            double nW = (seat.widthInch / vWidth) * gridWidth;
+
+            return SeatModel(
+              id: seat.id,
+              name: seat.name,
+              icon: seat.icon,
+              isWindowSeat: seat.isWindowSeat,
+              isFoldingSeat: seat.isFoldingSeat,
+              isReadingLights: seat.isReadingLights,
+              height: nH,
+              width: nW,
+              heightInch: seat.heightInch,
+              widthInch: seat.widthInch,
+              coordinate: CoordinateModel(dx: nDx, dy: nDy),
+            );
+          }).toList();
+
+          newWheels = sm.wheels.map((seat) {
+            double nH = (seat.heightInch / vWidth) * gridWidth;
+            double nW = (seat.widthInch / vWidth) * gridWidth;
+
+            double nDx = paddingH - nW / 2;
+            double nDy = (seat.coordinate.dy / prevGG) * gridGap;
+
+            return SeatModel(
+              id: seat.id,
+              name: seat.name,
+              icon: seat.icon,
+              isWindowSeat: seat.isWindowSeat,
+              isFoldingSeat: seat.isFoldingSeat,
+              isReadingLights: seat.isReadingLights,
+              height: nH,
+              width: nW,
+              heightInch: seat.heightInch,
+              widthInch: seat.widthInch,
+              coordinate: CoordinateModel(dx: nDx, dy: nDy),
+            );
+          }).toList();
+
+          newDoors = sm.doors.map((seat) {
+            double nH = (seat.heightInch / vWidth) * gridWidth;
+            double nW = (seat.widthInch / vWidth) * gridWidth;
+
+            double nDx = seat.coordinate.dx > paddingH + seat.width
+                ? paddingH + gridWidth - nW / 2
+                : paddingH - nW / 2;
+            double nDy = (seat.coordinate.dy / prevGG) * gridGap;
+
+            return SeatModel(
+              id: seat.id,
+              name: seat.name,
+              icon: seat.icon,
+              isWindowSeat: seat.isWindowSeat,
+              isFoldingSeat: seat.isFoldingSeat,
+              isReadingLights: seat.isReadingLights,
+              height: nH,
+              width: nW,
+              heightInch: seat.heightInch,
+              widthInch: seat.widthInch,
+              coordinate: CoordinateModel(dx: nDx, dy: nDy),
+            );
+          }).toList();
+        }
+
+        newSections.add(
+          SectionModel(
+            name: sm.name,
+            seats: newSeats,
+            wheels: newWheels,
+            doors: newDoors,
+            mainAxisCount: newMAC,
+            height: newHeight,
+          ),
+        );
+      }
+
+      sections = newSections;
+
       await gridBox.put(
-        "dimension",
-        jsonEncode({
-          "gridGap": gridGap,
-          "mainAxisCount": mainAxisCount,
-        }),
+        "sections",
+        jsonEncode(sections.map((e) => e.toJson()).toList()),
       );
-
-      return;
     }
 
-    Map<String, dynamic> gD = jsonDecode(dimension);
-    int prevGG = gD["gridGap"];
-    int prevMAC = gD["mainAxisCount"];
+    emit(_state);
 
-    if (prevMAC > mainAxisCount) {
-      mainAxisCount = prevMAC;
-      gridSH = (mainAxisCount * gridGap).toDouble();
+    if (gridGap != prevGG) {
+      await gridBox.put("gridGap", gridGap);
     }
+  }
 
-    if (seatsData != null) {
-      List<dynamic> list = jsonDecode(seatsData) as List;
-      seats = list.map((e) => SeatModel.fromJson(e)).toList();
+  clearData() async {
+    sections = [
+      SectionModel(
+        name: "First Section",
+        seats: const [],
+        wheels: const [],
+        doors: const [],
+        mainAxisCount: mainAxisCount,
+        height: gridHeight,
+      )
+    ];
 
-      if (prevGG != gridGap || prevMAC != mainAxisCount) {
-        List<SeatModel> newSeats = seats.map((seat) {
-          // New Coordinate
-          double nDx = (seat.coordinate.dx / prevGG) * gridGap;
-          double nDy = (seat.coordinate.dy / prevGG) * gridGap;
+    emit(_state);
 
-          // New Size
-          double nH = (seat.heightInch / vWidth) * gridWidth;
-          double nW = (seat.widthInch / vWidth) * gridWidth;
+    gridBox.clear();
+    await gridBox.put("gridGap", gridGap);
+  }
 
-          return SeatModel(
-            id: seat.id,
-            name: seat.name,
-            icon: seat.icon,
-            isWindowSeat: seat.isWindowSeat,
-            isFoldingSeat: seat.isFoldingSeat,
-            isReadingLights: seat.isReadingLights,
-            height: nH,
-            width: nW,
-            heightInch: seat.heightInch,
-            widthInch: seat.widthInch,
-            coordinate: CoordinateModel(
-              dx: nDx,
-              dy: nDy,
-            ),
-          );
-        }).toList();
-
-        seats = newSeats;
-
-        await gridBox.put(
-          "seats",
-          jsonEncode(seats.map((e) => e.toJson()).toList()),
-        );
-      }
-    }
-
-    if (wheelData != null) {
-      List<dynamic> list = jsonDecode(wheelData) as List;
-      wheels = list.map((e) => SeatModel.fromJson(e)).toList();
-
-      if (prevGG != gridGap) {
-        List<SeatModel> newSeats = wheels.map((seat) {
-          double nH = (seat.heightInch / vWidth) * gridWidth;
-          double nW = (seat.widthInch / vWidth) * gridWidth;
-
-          double nDx = paddingH - nW / 2;
-          double nDy = (seat.coordinate.dy / prevGG) * gridGap;
-
-          return SeatModel(
-            id: seat.id,
-            name: seat.name,
-            icon: seat.icon,
-            isWindowSeat: seat.isWindowSeat,
-            isFoldingSeat: seat.isFoldingSeat,
-            isReadingLights: seat.isReadingLights,
-            height: nH,
-            width: nW,
-            heightInch: seat.heightInch,
-            widthInch: seat.widthInch,
-            coordinate: CoordinateModel(dx: nDx, dy: nDy),
-          );
-        }).toList();
-
-        wheels = newSeats;
-
-        await gridBox.put(
-          "wheels",
-          jsonEncode(wheels.map((e) => e.toJson()).toList()),
-        );
-      }
-    }
-
-    if (doorData != null) {
-      List<dynamic> list = jsonDecode(doorData) as List;
-      doors = list.map((e) => SeatModel.fromJson(e)).toList();
-
-      if (prevGG != gridGap) {
-        List<SeatModel> newSeats = doors.map((seat) {
-          double nH = (seat.heightInch / vWidth) * gridWidth;
-          double nW = (seat.widthInch / vWidth) * gridWidth;
-
-          double nDx = seat.coordinate.dx > paddingH + seat.width
-              ? paddingH + gridWidth - nW / 2
-              : paddingH - nW / 2;
-          double nDy = (seat.coordinate.dy / prevGG) * gridGap;
-
-          return SeatModel(
-            id: seat.id,
-            name: seat.name,
-            icon: seat.icon,
-            isWindowSeat: seat.isWindowSeat,
-            isFoldingSeat: seat.isFoldingSeat,
-            isReadingLights: seat.isReadingLights,
-            height: nH,
-            width: nW,
-            heightInch: seat.heightInch,
-            widthInch: seat.widthInch,
-            coordinate: CoordinateModel(dx: nDx, dy: nDy),
-          );
-        }).toList();
-
-        doors = newSeats;
-
-        await gridBox.put(
-          "doors",
-          jsonEncode(doors.map((e) => e.toJson()).toList()),
-        );
-      }
-    }
+  addSection(String name) async {
+    sections.add(SectionModel(
+      name: name,
+      seats: const [],
+      wheels: const [],
+      doors: const [],
+      mainAxisCount: mainAxisCount,
+      height: gridHeight,
+    ));
+    updateState = !updateState;
 
     emit(_state);
 
     await gridBox.put(
-      "dimension",
-      jsonEncode({
-        "gridGap": gridGap,
-        "mainAxisCount": mainAxisCount,
-      }),
+      "sections",
+      jsonEncode(sections.map((e) => e.toJson()).toList()),
     );
   }
 
-  editName(String newName) {
-    name = newName;
+  deleteSection(int index) async {
+    sections.removeAt(index);
+    updateState = !updateState;
+
     emit(_state);
+
+    await gridBox.put(
+      "sections",
+      jsonEncode(sections.map((e) => e.toJson()).toList()),
+    );
+  }
+
+  editSectionName({required int sectionIndex, required String newName}) async {
+    sections[sectionIndex].name = newName;
+    updateState = !updateState;
+    emit(_state);
+
+    await gridBox.put(
+      "sections",
+      jsonEncode(sections.map((e) => e.toJson()).toList()),
+    );
+  }
+
+  removeSeat({
+    required int sectionIndex,
+    required int seatIndex,
+    required String name,
+  }) async {
+    if (name == "Wheel") {
+      sections[sectionIndex].wheels.removeAt(seatIndex);
+    } else if (name == "Door") {
+      sections[sectionIndex].doors.removeAt(seatIndex);
+    } else {
+      sections[sectionIndex].seats.removeAt(seatIndex);
+    }
+    updateState = !updateState;
+
+    emit(_state);
+
+    await gridBox.put(
+      "sections",
+      jsonEncode(sections.map((e) => e.toJson()).toList()),
+    );
   }
 
   rotate() {
@@ -313,6 +356,9 @@ class DragDropCubit extends Cubit<DragDropState> {
         (appStatusH + seatTypeH + gridTM)) {
       return;
     }
+
+    int sectionIndex = 0;
+    SectionModel section = sections[sectionIndex];
 
     // New x coordinate of the dragged Widget
     double newLeft = details.offset.dx - paddingH;
@@ -341,10 +387,10 @@ class DragDropCubit extends Cubit<DragDropState> {
     }
 
     // Checking if the dragged widget collides with other widgets inside the grid area or not
-    for (int i = 0; i < seats.length; i++) {
-      CoordinateModel cn = seats[i].coordinate;
-      double h = seats[i].height;
-      double w = seats[i].width;
+    for (int i = 0; i < section.seats.length; i++) {
+      CoordinateModel cn = section.seats[i].coordinate;
+      double h = section.seats[i].height;
+      double w = section.seats[i].width;
 
       bool xExist = cn.dx <= left && left < cn.dx + w ||
           left <= cn.dx && cn.dx < left + seatW;
@@ -355,23 +401,15 @@ class DragDropCubit extends Cubit<DragDropState> {
     }
 
     // if the dragged widget reaches the end of grid container
-    if ((top + seatH) ~/ gridGap >= mainAxisCount - 1) {
-      mainAxisCount += (seatH ~/ gridGap);
-      gridSH = (mainAxisCount * gridGap).toDouble();
-
-      await gridBox.put(
-        "dimension",
-        jsonEncode({
-          "gridGap": gridGap,
-          "mainAxisCount": mainAxisCount,
-        }),
-      );
+    if ((top + seatH) ~/ gridGap >= section.mainAxisCount - 1) {
+      sections[sectionIndex].mainAxisCount += (seatH ~/ gridGap);
+      sections[sectionIndex].height =
+          (section.mainAxisCount * gridGap).toDouble();
     }
 
-    List<SeatModel> seatModels = seats.toList();
-
+    List<SeatModel> seatModels = sections[sectionIndex].seats.toList();
     seatModels.add(SeatModel(
-      id: seats.length + 1,
+      id: section.seats.length + 1,
       name: sType.name,
       icon: sType.icon,
       isWindowSeat: false,
@@ -383,22 +421,25 @@ class DragDropCubit extends Cubit<DragDropState> {
       widthInch: sType.width,
       coordinate: CoordinateModel(dx: left, dy: top),
     ));
+    sections[sectionIndex].seats = seatModels;
 
-    seats = seatModels;
+    updateState = !updateState;
 
     emit(_state);
 
     await gridBox.put(
-      "seats",
-      jsonEncode(seats.map((e) => e.toJson()).toList()),
+      "sections",
+      jsonEncode(sections.map((e) => e.toJson()).toList()),
     );
   }
 
   updateSeatPosition({
-    required int index,
+    required int sectionIndex,
+    required int seatIndex,
     required DraggableDetails details,
   }) async {
-    SeatModel seat = seats[index];
+    SectionModel section = sections[sectionIndex];
+    SeatModel seat = section.seats[seatIndex];
 
     double prevLeft = seat.coordinate.dx;
     double newLeft = details.offset.dx - paddingH;
@@ -444,13 +485,13 @@ class DragDropCubit extends Cubit<DragDropState> {
       }
     }
 
-    for (int i = 0; i < seats.length; i++) {
-      CoordinateModel cn = seats[i].coordinate;
-      double h = seats[i].height;
-      double w = seats[i].width;
+    for (int i = 0; i < section.seats.length; i++) {
+      CoordinateModel cn = section.seats[i].coordinate;
+      double h = section.seats[i].height;
+      double w = section.seats[i].width;
 
       // Not checking with the same widget
-      if (seats[i].id != seat.id) {
+      if (section.seats[i].id != seat.id) {
         bool xExist = cn.dx <= left && left < cn.dx + w ||
             left <= cn.dx && cn.dx < left + seat.width;
         bool yExist = cn.dy <= top && top < cn.dy + h ||
@@ -459,52 +500,46 @@ class DragDropCubit extends Cubit<DragDropState> {
         if (xExist && yExist) return;
       }
     }
-
-    if ((top + seat.height) ~/ gridGap >= mainAxisCount - 1) {
-      mainAxisCount += (seat.height ~/ gridGap);
-      gridSH = (mainAxisCount * gridGap).toDouble();
-
-      await gridBox.put(
-        "dimension",
-        jsonEncode({
-          "gridGap": gridGap,
-          "mainAxisCount": mainAxisCount,
-        }),
-      );
+    if ((top + seat.height) ~/ gridGap >= section.mainAxisCount - 1) {
+      sections[sectionIndex].mainAxisCount += (seat.height ~/ gridGap);
+      sections[sectionIndex].height =
+          (section.mainAxisCount * gridGap).toDouble();
     }
 
-    List<SeatModel> seatModels = seats.toList();
-
-    seatModels[index] = SeatModel(
-      id: seats[index].id,
-      name: seats[index].name,
-      icon: seats[index].icon,
-      isWindowSeat: seats[index].isWindowSeat,
-      isFoldingSeat: seats[index].isFoldingSeat,
-      isReadingLights: seats[index].isReadingLights,
-      height: seats[index].height,
-      width: seats[index].width,
-      heightInch: seats[index].heightInch,
-      widthInch: seats[index].widthInch,
+    List<SeatModel> seatModels = sections[sectionIndex].seats.toList();
+    seatModels[seatIndex] = SeatModel(
+      id: seat.id,
+      name: seat.name,
+      icon: seat.icon,
+      isWindowSeat: seat.isWindowSeat,
+      isFoldingSeat: seat.isFoldingSeat,
+      isReadingLights: seat.isReadingLights,
+      height: seat.height,
+      width: seat.width,
+      heightInch: seat.heightInch,
+      widthInch: seat.widthInch,
       coordinate: CoordinateModel(dx: left, dy: top),
     );
+    sections[sectionIndex].seats = seatModels;
 
-    seats = seatModels;
+    updateState = !updateState;
 
     emit(_state);
 
     await gridBox.put(
-      "seats",
-      jsonEncode(seats.map((e) => e.toJson()).toList()),
+      "sections",
+      jsonEncode(sections.map((e) => e.toJson()).toList()),
     );
   }
 
   updateSeat({
-    required int index,
+    required int sectionIndex,
+    required int seatIndex,
     required SeatModel seat,
     required int newHInch,
     required int newWInch,
   }) async {
+    SectionModel section = sections[sectionIndex];
     bool overlap = false;
 
     double seatH =
@@ -517,10 +552,10 @@ class DragDropCubit extends Cubit<DragDropState> {
       double left = seat.coordinate.dx;
       double top = seat.coordinate.dy;
 
-      for (int i = 0; i < seats.length; i++) {
-        CoordinateModel cn = seats[i].coordinate;
-        double h = seats[i].height;
-        double w = seats[i].width;
+      for (int i = 0; i < section.seats.length; i++) {
+        CoordinateModel cn = section.seats[i].coordinate;
+        double h = section.seats[i].height;
+        double w = section.seats[i].width;
 
         if (cn.dx != left || cn.dy != top) {
           bool xExist = cn.dx <= left && left < cn.dx + w ||
@@ -563,8 +598,8 @@ class DragDropCubit extends Cubit<DragDropState> {
       icon = "asset/icons/sno.svg";
     }
 
-    List<SeatModel> tempSeats = seats.toList();
-    tempSeats[index] = SeatModel(
+    List<SeatModel> seatModels = sections[sectionIndex].seats.toList();
+    seatModels[seatIndex] = SeatModel(
       id: seat.id,
       name: seat.name,
       icon: icon,
@@ -577,13 +612,14 @@ class DragDropCubit extends Cubit<DragDropState> {
       widthInch: wI,
       coordinate: seat.coordinate,
     );
+    sections[sectionIndex].seats = seatModels;
+    updateState = !updateState;
 
-    seats = tempSeats;
     emit(_state);
 
     await gridBox.put(
-      "seats",
-      jsonEncode(seats.map((e) => e.toJson()).toList()),
+      "sections",
+      jsonEncode(sections.map((e) => e.toJson()).toList()),
     );
   }
 
@@ -602,6 +638,9 @@ class DragDropCubit extends Cubit<DragDropState> {
       return;
     }
 
+    int sectionIndex = 0;
+    SectionModel section = sections[sectionIndex];
+    
     // Adding the y coordinate scroll offset to position it in right place
     double yOffset = details.offset.dy + sController.offset;
     double newTop = yOffset - (appStatusH + seatTypeH + gridTM);
@@ -609,9 +648,9 @@ class DragDropCubit extends Cubit<DragDropState> {
     double top = max(0, min(maxTop, newTop));
 
     // Checking if the dragged widget collides with other widgets inside the grid area or not
-    for (int i = 0; i < wheels.length; i++) {
-      CoordinateModel cn = wheels[i].coordinate;
-      double h = wheels[i].height;
+    for (int i = 0; i < section.wheels.length; i++) {
+      CoordinateModel cn = section.wheels[i].coordinate;
+      double h = section.wheels[i].height;
 
       bool yExist = cn.dy <= top && top < cn.dy + h ||
           top <= cn.dy && cn.dy < top + seatH;
@@ -619,9 +658,9 @@ class DragDropCubit extends Cubit<DragDropState> {
       if (yExist) return;
     }
 
-    for (int i = 0; i < doors.length; i++) {
-      CoordinateModel cn = doors[i].coordinate;
-      double h = doors[i].height;
+    for (int i = 0; i < section.doors.length; i++) {
+      CoordinateModel cn = section.doors[i].coordinate;
+      double h = section.doors[i].height;
 
       bool yExist = cn.dy <= top && top < cn.dy + h ||
           top <= cn.dy && cn.dy < top + seatH;
@@ -629,10 +668,9 @@ class DragDropCubit extends Cubit<DragDropState> {
       if (yExist) return;
     }
 
-    List<SeatModel> seatModels = wheels.toList();
-
+    List<SeatModel> seatModels = sections[sectionIndex].wheels.toList();
     seatModels.add(SeatModel(
-      id: wheels.length + 1,
+      id: section.wheels.length + 1,
       name: sType.name,
       icon: sType.icon,
       isWindowSeat: false,
@@ -644,33 +682,35 @@ class DragDropCubit extends Cubit<DragDropState> {
       widthInch: sType.width,
       coordinate: CoordinateModel(dx: paddingH - seatW / 2, dy: top),
     ));
-
-    wheels = seatModels;
+    sections[sectionIndex].wheels = seatModels;
+    updateState = !updateState;
 
     emit(_state);
 
     await gridBox.put(
-      "wheels",
-      jsonEncode(wheels.map((e) => e.toJson()).toList()),
+      "sections",
+      jsonEncode(sections.map((e) => e.toJson()).toList()),
     );
   }
 
   updateWheelPosition({
-    required int index,
+    required int sectionIndex,
+    required int wheelIndex,
     required DraggableDetails details,
   }) async {
-    SeatModel seat = wheels[index];
+    SectionModel section = sections[sectionIndex];
+    SeatModel seat = section.wheels[wheelIndex];
 
     double yOffset = details.offset.dy + sController.offset;
     double newTop = yOffset - (appStatusH + seatTypeH + gridTM);
     double maxTop = gridSH - seat.height;
     double top = max(0, min(maxTop, newTop));
 
-    for (int i = 0; i < wheels.length; i++) {
-      CoordinateModel cn = wheels[i].coordinate;
-      double h = wheels[i].height;
+    for (int i = 0; i < section.wheels.length; i++) {
+      CoordinateModel cn = section.wheels[i].coordinate;
+      double h = section.wheels[i].height;
 
-      if (seat.id != wheels[i].id) {
+      if (seat.id != section.wheels[i].id) {
         bool yExist = cn.dy <= top && top < cn.dy + h ||
             top <= cn.dy && cn.dy < top + seat.height;
 
@@ -678,9 +718,9 @@ class DragDropCubit extends Cubit<DragDropState> {
       }
     }
 
-    for (int i = 0; i < doors.length; i++) {
-      CoordinateModel cn = doors[i].coordinate;
-      double h = doors[i].height;
+    for (int i = 0; i < section.doors.length; i++) {
+      CoordinateModel cn = section.doors[i].coordinate;
+      double h = section.doors[i].height;
 
       bool yExist = cn.dy <= top && top < cn.dy + h ||
           top <= cn.dy && cn.dy < top + seat.height;
@@ -688,9 +728,8 @@ class DragDropCubit extends Cubit<DragDropState> {
       if (yExist) return;
     }
 
-    List<SeatModel> seatModels = wheels.toList();
-
-    seatModels[index] = SeatModel(
+    List<SeatModel> seatModels = sections[sectionIndex].wheels.toList();
+    seatModels[wheelIndex] = SeatModel(
       id: seat.id,
       name: seat.name,
       icon: seat.icon,
@@ -703,14 +742,14 @@ class DragDropCubit extends Cubit<DragDropState> {
       widthInch: seat.widthInch,
       coordinate: CoordinateModel(dx: seat.coordinate.dx, dy: top),
     );
-
-    wheels = seatModels;
+    sections[sectionIndex].wheels = seatModels;
+    updateState = !updateState;
 
     emit(_state);
 
     await gridBox.put(
-      "wheels",
-      jsonEncode(wheels.map((e) => e.toJson()).toList()),
+      "sections",
+      jsonEncode(sections.map((e) => e.toJson()).toList()),
     );
   }
 
@@ -728,6 +767,10 @@ class DragDropCubit extends Cubit<DragDropState> {
       return;
     }
 
+    int sectionIndex = 0;
+
+    SectionModel section = sections[sectionIndex];
+
     double left = details.offset.dx;
 
     if (left <= paddingH + gridWidth / 2) {
@@ -741,19 +784,19 @@ class DragDropCubit extends Cubit<DragDropState> {
     double maxTop = gridSH - seatH;
     double top = max(0, min(maxTop, newTop));
 
-    for (int i = 0; i < doors.length; i++) {
-      CoordinateModel cn = doors[i].coordinate;
-      double h = doors[i].height;
+    for (int i = 0; i < section.doors.length; i++) {
+      CoordinateModel cn = section.doors[i].coordinate;
+      double h = section.doors[i].height;
 
       bool yExist = cn.dy <= top && top < cn.dy + h ||
           top <= cn.dy && cn.dy < top + seatH;
 
-      if (yExist && left == doors[i].coordinate.dx) return;
+      if (yExist && left == section.doors[i].coordinate.dx) return;
     }
 
-    for (int i = 0; i < wheels.length; i++) {
-      CoordinateModel cn = wheels[i].coordinate;
-      double h = wheels[i].height;
+    for (int i = 0; i < section.wheels.length; i++) {
+      CoordinateModel cn = section.wheels[i].coordinate;
+      double h = section.wheels[i].height;
 
       bool yExist = cn.dy <= top && top < cn.dy + h ||
           top <= cn.dy && cn.dy < top + seatH;
@@ -761,10 +804,9 @@ class DragDropCubit extends Cubit<DragDropState> {
       if (yExist) return;
     }
 
-    List<SeatModel> seatModels = doors.toList();
-
+    List<SeatModel> seatModels = sections[sectionIndex].doors.toList();
     seatModels.add(SeatModel(
-      id: doors.length + 1,
+      id: section.doors.length + 1,
       name: sType.name,
       icon: sType.icon,
       isWindowSeat: false,
@@ -776,22 +818,24 @@ class DragDropCubit extends Cubit<DragDropState> {
       widthInch: sType.width,
       coordinate: CoordinateModel(dx: left, dy: top),
     ));
-
-    doors = seatModels;
+    sections[sectionIndex].doors = seatModels;
+    updateState = !updateState;
 
     emit(_state);
 
     await gridBox.put(
-      "doors",
-      jsonEncode(doors.map((e) => e.toJson()).toList()),
+      "sections",
+      jsonEncode(sections.map((e) => e.toJson()).toList()),
     );
   }
 
   updateDoorPosition({
-    required int index,
+    required int sectionIndex,
+    required int doorIndex,
     required DraggableDetails details,
   }) async {
-    SeatModel seat = doors[index];
+    SectionModel section = sections[sectionIndex];
+    SeatModel seat = section.doors[doorIndex];
 
     double yOffset = details.offset.dy + sController.offset;
     double newTop = yOffset - (appStatusH + seatTypeH + gridTM);
@@ -806,21 +850,21 @@ class DragDropCubit extends Cubit<DragDropState> {
       left = paddingH + gridWidth - seat.width / 2;
     }
 
-    for (int i = 0; i < doors.length; i++) {
-      CoordinateModel cn = doors[i].coordinate;
-      double h = doors[i].height;
+    for (int i = 0; i < section.doors.length; i++) {
+      CoordinateModel cn = section.doors[i].coordinate;
+      double h = section.doors[i].height;
 
-      if (doors[i].id != seat.id) {
+      if (section.doors[i].id != seat.id) {
         bool yExist = cn.dy <= top && top < cn.dy + h ||
             top <= cn.dy && cn.dy < top + seat.height;
 
-        if (yExist && left == doors[i].coordinate.dx) return;
+        if (yExist && left == section.doors[i].coordinate.dx) return;
       }
     }
 
-    for (int i = 0; i < wheels.length; i++) {
-      CoordinateModel cn = wheels[i].coordinate;
-      double h = wheels[i].height;
+    for (int i = 0; i < section.wheels.length; i++) {
+      CoordinateModel cn = section.wheels[i].coordinate;
+      double h = section.wheels[i].height;
 
       bool yExist = cn.dy <= top && top < cn.dy + h ||
           top <= cn.dy && cn.dy < top + seat.height;
@@ -828,9 +872,8 @@ class DragDropCubit extends Cubit<DragDropState> {
       if (yExist) return;
     }
 
-    List<SeatModel> seatModels = doors.toList();
-
-    seatModels[index] = SeatModel(
+    List<SeatModel> seatModels = sections[sectionIndex].doors.toList();
+    seatModels[doorIndex] = SeatModel(
       id: seat.id,
       name: seat.name,
       icon: seat.icon,
@@ -843,14 +886,14 @@ class DragDropCubit extends Cubit<DragDropState> {
       widthInch: seat.widthInch,
       coordinate: CoordinateModel(dx: left, dy: top),
     );
-
-    doors = seatModels;
+    sections[sectionIndex].doors = seatModels;
+    updateState = !updateState;
 
     emit(_state);
 
     await gridBox.put(
-      "doors",
-      jsonEncode(doors.map((e) => e.toJson()).toList()),
+      "sections",
+      jsonEncode(sections.map((e) => e.toJson()).toList()),
     );
   }
 }

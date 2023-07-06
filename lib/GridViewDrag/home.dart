@@ -1,4 +1,5 @@
 import 'package:drag_drop/GridViewDrag/cubit/drag_drop_cubit.dart';
+import 'package:drag_drop/GridViewDrag/widgets/add_section_dialog.dart';
 import 'package:drag_drop/GridViewDrag/widgets/buttons.dart';
 import 'package:drag_drop/GridViewDrag/widgets/grid_container.dart';
 import 'package:drag_drop/GridViewDrag/widgets/seat_type_container.dart';
@@ -57,19 +58,50 @@ class _HomeState extends State<Home> {
                     angle: state.angle,
                     sTypes: state.sTypes,
                   ),
-                  GridContainer(
-                    sController: state.sController,
-                    name: state.name,
-                    gridTM: state.gridTM,
-                    paddingH: state.paddingH,
-                    gridGap: state.gridGap,
-                    gridHeight: state.gridHeight,
-                    crossAxisCount: state.crossAxisCount,
-                    mainAxisCount: state.mainAxisCount,
-                    angle: state.angle,
-                    seats: state.seats,
-                    wheels: state.wheels,
-                    doors: state.doors, 
+                  SizedBox(
+                    width: double.maxFinite,
+                    height: state.gridHeight + state.gridTM,
+                    child: SingleChildScrollView(
+                      controller: state.sController,
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          GridContainer(
+                            sController: state.sController,
+                            gridTM: state.gridTM,
+                            paddingH: state.paddingH,
+                            gridGap: state.gridGap,
+                            crossAxisCount: state.crossAxisCount,
+                            mainAxisCount: state.mainAxisCount,
+                            angle: state.angle,
+                            sections: state.sections,
+                            seats: state.seats,
+                            wheels: state.wheels,
+                            doors: state.doors,
+                          ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(vertical: 10),
+                            child: InkWell(
+                              onTap: () => addSection(context),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: const [
+                                  Icon(Icons.add, size: 20),
+                                  SizedBox(width: 10),
+                                  Text(
+                                    "Add Section",
+                                    style: TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  )
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                   ),
                   Container(
                     padding: EdgeInsets.symmetric(vertical: state.gridBM / 2),

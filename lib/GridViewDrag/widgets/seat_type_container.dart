@@ -2,7 +2,6 @@ import 'package:drag_drop/GridViewDrag/cubit/drag_drop_cubit.dart';
 import 'package:drag_drop/GridViewDrag/model/seat_type_model.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'dart:math' as math;
 
 import 'package:flutter_svg/flutter_svg.dart';
 

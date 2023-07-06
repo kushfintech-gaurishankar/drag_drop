@@ -74,6 +74,20 @@ class SeatModel extends Equatable {
 
   @override
   String toString() {
-    return "SeatModel(id: $id,, name: $name, icon: $icon, isWindowSeat: $isWindowSeat, isFoldingSeat: $isFoldingSeat, isReadingLights: $isReadingLights, coordinate: ${coordinate.toString()})";
+    return """
+      SeatModel(
+        id: $id,
+        name: "$name",
+        icon: "$icon",
+        isWindowSeat: $isWindowSeat,
+        isFoldingSeat: $isFoldingSeat,
+        isReadingLights: $isReadingLights,
+        heightInch:$heightInch,
+        widthInch:$widthInch,
+        height:$height,
+        width:$width,
+        coordinate: ${coordinate.toString()},
+      )
+    """;
   }
 }

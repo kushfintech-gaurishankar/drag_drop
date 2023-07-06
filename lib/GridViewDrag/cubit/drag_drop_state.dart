@@ -10,8 +10,8 @@ abstract class DragDropState extends Equatable {
 class DragDropInitial extends DragDropState {}
 
 class DragDrop extends DragDropState {
+  final bool updateState;
   final ScrollController sController;
-  final String name;
   final int crossAxisCount;
   final int mainAxisCount;
   final int gridGap;
@@ -23,14 +23,15 @@ class DragDrop extends DragDropState {
   final double gridBM;
   final int angle;
   final List<SeatTypeModel> sTypes;
+  final List<SectionModel> sections;
   final List<SeatModel> seats;
   final List<SeatModel> wheels;
   final List<SeatModel> doors;
   final double vWidth;
 
   const DragDrop({
+    required this.updateState,
     required this.sController,
-    required this.name,
     required this.crossAxisCount,
     required this.mainAxisCount,
     required this.gridGap,
@@ -43,6 +44,7 @@ class DragDrop extends DragDropState {
     required this.gridBM,
     required this.angle,
     required this.sTypes,
+    required this.sections,
     required this.seats,
     required this.wheels,
     required this.doors,
@@ -50,9 +52,10 @@ class DragDrop extends DragDropState {
 
   @override
   List<Object?> get props => [
-        name,
+        updateState,
         mainAxisCount,
         angle,
+        sections,
         seats,
         wheels,
         doors,

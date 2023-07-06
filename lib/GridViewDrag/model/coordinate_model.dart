@@ -25,6 +25,11 @@ class CoordinateModel extends Equatable {
 
   @override
   String toString() {
-    return "CoordinateModel($dx, $dy)";
+    return """
+    CoordinateModel(
+      dx:$dx,
+      dy:$dy,
+    )
+    """;
   }
 }

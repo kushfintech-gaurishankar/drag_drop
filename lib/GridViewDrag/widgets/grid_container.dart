@@ -1,23 +1,22 @@
 import 'package:drag_drop/GridViewDrag/model/seat_model.dart';
-import 'package:drag_drop/GridViewDrag/widgets/dialog.dart';
+import 'package:drag_drop/GridViewDrag/model/section_model.dart';
+import 'package:drag_drop/GridViewDrag/widgets/edit_section_name_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/svg.dart';
 
 import '../cubit/drag_drop_cubit.dart';
 import 'bms_seat.dart';
-import 'dart:math' as math;
 
 class GridContainer extends StatelessWidget {
   final ScrollController sController;
-  final String name;
-  final double gridHeight;
   final double gridTM;
   final double paddingH;
   final int gridGap;
   final int crossAxisCount;
   final int mainAxisCount;
   final int angle;
+  final List<SectionModel> sections;
   final List<SeatModel> seats;
   final List<SeatModel> wheels;
   final List<SeatModel> doors;
@@ -25,14 +24,13 @@ class GridContainer extends StatelessWidget {
   const GridContainer({
     super.key,
     required this.sController,
-    required this.name,
     required this.paddingH,
     required this.gridGap,
     required this.gridTM,
-    required this.gridHeight,
     required this.crossAxisCount,
     required this.mainAxisCount,
     required this.angle,
+    required this.sections,
     required this.seats,
     required this.wheels,
     required this.doors,
@@ -40,12 +38,11 @@ class GridContainer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      width: double.maxFinite,
-      height: gridHeight + gridTM,
-      child: SingleChildScrollView(
-        controller: sController,
-        child: Column(
+    return Column(
+      children: List.generate(sections.length, (index) {
+        SectionModel section = sections[index];
+        return Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
             Container(
               height: gridTM,
@@ -55,34 +52,58 @@ class GridContainer extends StatelessWidget {
                 bottom: 5,
               ),
               child: Row(
-                mainAxisAlignment: MainAxisAlignment.start,
-                crossAxisAlignment: CrossAxisAlignment.end,
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(name, style: const TextStyle(fontSize: 18)),
-                  const SizedBox(width: 10),
-                  GestureDetector(
-                    onTap: () => editName(
-                      context: context,
-                      name: name,
-                    ),
-                    child: Container(
-                      padding: const EdgeInsets.all(5),
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: const Color(0XFF6941C6).withOpacity(.2),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.start,
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(section.name, style: const TextStyle(fontSize: 18)),
+                      const SizedBox(width: 10),
+                      GestureDetector(
+                        onTap: () => editSectionName(
+                          context: context,
+                          sectionIndex: index,
+                          name: section.name,
+                        ),
+                        child: Container(
+                          padding: const EdgeInsets.all(5),
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: const Color(0XFF6941C6).withOpacity(.2),
+                          ),
+                          child: const Icon(
+                            Icons.edit,
+                            color: Color(0XFF6941C6),
+                            size: 15,
+                          ),
+                        ),
                       ),
-                      child: const Icon(
-                        Icons.edit,
-                        color: Color(0XFF6941C6),
-                        size: 15,
-                      ),
-                    ),
+                    ],
                   ),
+                  if (index != 0)
+                    GestureDetector(
+                      onTap: () => BlocProvider.of<DragDropCubit>(context)
+                        ..deleteSection(index),
+                      child: Container(
+                        padding: const EdgeInsets.all(5),
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: Colors.red.withOpacity(.2),
+                        ),
+                        child: const Icon(
+                          Icons.delete,
+                          color: Colors.red,
+                          size: 15,
+                        ),
+                      ),
+                    ),
                 ],
               ),
             ),
             SizedBox(
-              height: (mainAxisCount * gridGap).toDouble(),
+              height: (section.mainAxisCount * gridGap).toDouble(),
               child: Stack(
                 children: [
                   GridView.count(
@@ -90,8 +111,8 @@ class GridContainer extends StatelessWidget {
                     physics: const NeverScrollableScrollPhysics(),
                     shrinkWrap: true,
                     crossAxisCount: crossAxisCount,
-                    children:
-                        List.generate(mainAxisCount * crossAxisCount, (index) {
+                    children: List.generate(
+                        section.mainAxisCount * crossAxisCount, (index) {
                       return Container(
                         decoration: BoxDecoration(
                           color: Colors.white,
@@ -103,81 +124,110 @@ class GridContainer extends StatelessWidget {
                       );
                     }),
                   ),
+                  Stack(
+                    children:
+                        List.generate(section.wheels.length, (wheelIndex) {
+                      SeatModel seat = section.wheels[wheelIndex];
+                      return Positioned(
+                        left: seat.coordinate.dx,
+                        top: seat.coordinate.dy,
+                        child: GestureDetector(
+                          onTap: () => bmsSeat(
+                            mainContext: context,
+                            seat: seat,
+                            mainIndex: index,
+                            seatIndex: wheelIndex,
+                            mainAxisCount: mainAxisCount,
+                            crossAxisCount: crossAxisCount,
+                            gridGap: gridGap,
+                            angle: 0,
+                          ),
+                          child: LongPressDraggable(
+                            delay: const Duration(milliseconds: 100),
+                            onDragEnd: (DraggableDetails details) =>
+                                BlocProvider.of<DragDropCubit>(context)
+                                  ..updateWheelPosition(
+                                    sectionIndex: index,
+                                    wheelIndex: wheelIndex,
+                                    details: details,
+                                  ),
+                            childWhenDragging: wheelContainer(seat),
+                            feedback: wheelContainer(seat),
+                            child: wheelContainer(seat),
+                          ),
+                        ),
+                      );
+                    }),
+                  ),
                   Container(
                     margin: EdgeInsets.symmetric(horizontal: paddingH),
                     child: Stack(
                       children: List.generate(
-                        seats.length,
-                        (index) {
+                        sections[index].seats.length,
+                        (seatIndex) {
+                          SeatModel seatModel = section.seats[seatIndex];
                           return Positioned(
-                            left: seats[index].coordinate.dx,
-                            top: seats[index].coordinate.dy,
-                            child: GestureDetector(
-                              onTap: () => bmsSeat(
-                                mainContext: context,
-                                seat: seats[index],
-                                mainIndex: index,
-                                mainAxisCount: mainAxisCount,
-                                crossAxisCount: crossAxisCount,
-                                gridGap: gridGap,
-                                angle: angle,
-                              ),
-                              child: LongPressDraggable(
-                                delay: const Duration(milliseconds: 100),
-                                onDragEnd: (DraggableDetails details) =>
-                                    BlocProvider.of<DragDropCubit>(context)
-                                      ..updateSeatPosition(
-                                        index: index,
-                                        details: details,
-                                      ),
-                                childWhenDragging:
-                                    seat(seat: seats[index], border: false),
-                                feedback:
-                                    seat(seat: seats[index], border: true),
-                                child: seat(seat: seats[index], border: false),
-                              ),
-                            ),
-                          );
+                              left: seatModel.coordinate.dx,
+                              top: seatModel.coordinate.dy,
+                              child: GestureDetector(
+                                onTap: () => bmsSeat(
+                                  mainContext: context,
+                                  seat: seatModel,
+                                  mainIndex: index,
+                                  seatIndex: seatIndex,
+                                  mainAxisCount: mainAxisCount,
+                                  crossAxisCount: crossAxisCount,
+                                  gridGap: gridGap,
+                                  angle: angle,
+                                ),
+                                child: LongPressDraggable(
+                                  delay: const Duration(milliseconds: 100),
+                                  onDragEnd: (DraggableDetails details) =>
+                                      BlocProvider.of<DragDropCubit>(context)
+                                        ..updateSeatPosition(
+                                          sectionIndex: index,
+                                          seatIndex: seatIndex,
+                                          details: details,
+                                        ),
+                                  childWhenDragging: seatContainer(seatModel),
+                                  feedback: seatContainer(seatModel),
+                                  child: seatContainer(seatModel),
+                                ),
+                              ));
                         },
                       ),
                     ),
                   ),
                   Stack(
-                    children: List.generate(wheels.length, (index) {
+                    children: List.generate(section.doors.length, (doorIndex) {
+                      SeatModel seat = section.doors[doorIndex];
                       return Positioned(
-                        left: wheels[index].coordinate.dx,
-                        top: wheels[index].coordinate.dy,
-                        child: LongPressDraggable(
-                          delay: const Duration(milliseconds: 100),
-                          onDragEnd: (DraggableDetails details) =>
-                              BlocProvider.of<DragDropCubit>(context)
-                                ..updateWheelPosition(
-                                  index: index,
-                                  details: details,
-                                ),
-                          childWhenDragging: wheel(wheels[index]),
-                          feedback: wheel(wheels[index]),
-                          child: wheel(wheels[index]),
-                        ),
-                      );
-                    }),
-                  ),
-                  Stack(
-                    children: List.generate(doors.length, (index) {
-                      return Positioned(
-                        left: doors[index].coordinate.dx,
-                        top: doors[index].coordinate.dy,
-                        child: LongPressDraggable(
-                          delay: const Duration(milliseconds: 100),
-                          onDragEnd: (DraggableDetails details) =>
-                              BlocProvider.of<DragDropCubit>(context)
-                                ..updateDoorPosition(
-                                  index: index,
-                                  details: details,
-                                ),
-                          childWhenDragging: door(doors[index]),
-                          feedback: door(doors[index]),
-                          child: door(doors[index]),
+                        left: seat.coordinate.dx,
+                        top: seat.coordinate.dy,
+                        child: GestureDetector(
+                          onTap: () => bmsSeat(
+                            mainContext: context,
+                            seat: seat,
+                            mainIndex: index,
+                            seatIndex: doorIndex,
+                            mainAxisCount: mainAxisCount,
+                            crossAxisCount: crossAxisCount,
+                            gridGap: gridGap,
+                            angle: 0,
+                          ),
+                          child: LongPressDraggable(
+                            delay: const Duration(milliseconds: 100),
+                            onDragEnd: (DraggableDetails details) =>
+                                BlocProvider.of<DragDropCubit>(context)
+                                  ..updateDoorPosition(
+                                    sectionIndex: index,
+                                    doorIndex: doorIndex,
+                                    details: details,
+                                  ),
+                            childWhenDragging: doorContainer(seat),
+                            feedback: doorContainer(seat),
+                            child: doorContainer(seat),
+                          ),
                         ),
                       );
                     }),
@@ -186,12 +236,12 @@ class GridContainer extends StatelessWidget {
               ),
             ),
           ],
-        ),
-      ),
+        );
+      }),
     );
   }
 
-  AnimatedRotation seat({required SeatModel seat, required bool border}) {
+  AnimatedRotation seatContainer(SeatModel seat) {
     return AnimatedRotation(
       turns: angle == 0 ? 0 : .25,
       duration: const Duration(milliseconds: 500),
@@ -227,7 +277,7 @@ class GridContainer extends StatelessWidget {
     );
   }
 
-  SvgPicture door(SeatModel seat) {
+  SvgPicture doorContainer(SeatModel seat) {
     return SvgPicture.asset(
       seat.icon,
       height: seat.height,
@@ -235,7 +285,7 @@ class GridContainer extends StatelessWidget {
     );
   }
 
-  SizedBox wheel(SeatModel seat) {
+  SizedBox wheelContainer(SeatModel seat) {
     return SizedBox(
       height: seat.height,
       width: (crossAxisCount * gridGap).toDouble() + seat.width,

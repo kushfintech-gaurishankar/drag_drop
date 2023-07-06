@@ -11,10 +11,12 @@ void bmsSeat({
   required SeatModel seat,
   required int angle,
   required int mainIndex,
+  required int seatIndex,
   required int mainAxisCount,
   required int crossAxisCount,
   required int gridGap,
 }) {
+  GlobalKey<FormState> formKey = GlobalKey<FormState>();
   TextEditingController seatSize = TextEditingController();
   seatSize.text = seat.widthInch.toString();
 
@@ -45,6 +47,32 @@ void bmsSeat({
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
+                if (seat.name != "Wheel" && seat.name != "Door")
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: GestureDetector(
+                      onTap: () {
+                        Navigator.pop(context);
+                        BlocProvider.of<DragDropCubit>(mainContext).removeSeat(
+                          name: seat.name,
+                          sectionIndex: mainIndex,
+                          seatIndex: seatIndex,
+                        );
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.all(5),
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: Colors.red.withOpacity(.2),
+                        ),
+                        child: const Icon(
+                          Icons.delete,
+                          color: Colors.red,
+                          size: 20,
+                        ),
+                      ),
+                    ),
+                  ),
                 SizedBox(
                   width: seat.width / gridGap * (isSmall ? 30 : 20),
                   height: seat.height / gridGap * (isSmall ? 30 : 20),
@@ -71,7 +99,9 @@ void bmsSeat({
                     ),
                   ),
                 ),
-                if (seat.name != "Driver")
+                if (seat.name != "Driver" &&
+                    seat.name != "Wheel" &&
+                    seat.name != "Door")
                   Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
@@ -149,46 +179,90 @@ void bmsSeat({
                       )
                     ],
                   ),
-                const SizedBox(height: 20),
-                TextFormField(
-                  keyboardType: TextInputType.number,
-                  controller: seatSize,
-                  decoration: const InputDecoration(
-                    isDense: true,
-                    labelText: "Size",
-                    hintText: "Size in inch",
-                    border: OutlineInputBorder(),
+                if (seat.name != "Wheel" && seat.name != "Door")
+                  Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const SizedBox(height: 20),
+                      Form(
+                        key: formKey,
+                        child: TextFormField(
+                          keyboardType: TextInputType.number,
+                          controller: seatSize,
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return "Size must be provided";
+                            } else if (double.tryParse(value) == null) {
+                              return "Invalid size";
+                            }
+
+                            return null;
+                          },
+                          decoration: const InputDecoration(
+                            isDense: true,
+                            labelText: "Size",
+                            hintText: "Size in inch",
+                            border: OutlineInputBorder(),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                      ElevatedButton(
+                        onPressed: () {
+                          if (!formKey.currentState!.validate()) return;
+
+                          Navigator.pop(context);
+
+                          SeatModel newSeat = SeatModel(
+                            id: seat.id,
+                            name: seat.name,
+                            icon: seat.icon,
+                            isWindowSeat: isWindow,
+                            isFoldingSeat: isFolding,
+                            isReadingLights: seat.isReadingLights,
+                            height: seat.height,
+                            width: seat.width,
+                            heightInch: seat.heightInch,
+                            widthInch: seat.widthInch,
+                            coordinate: seat.coordinate,
+                          );
+
+                          BlocProvider.of<DragDropCubit>(mainContext)
+                              .updateSeat(
+                            sectionIndex: mainIndex,
+                            seatIndex: seatIndex,
+                            seat: newSeat,
+                            newHInch: int.parse(seatSize.text),
+                            newWInch: int.parse(seatSize.text),
+                          );
+                        },
+                        child: const Text("Save"),
+                      ),
+                      SizedBox(
+                          height: MediaQuery.of(context).viewInsets.bottom),
+                    ],
+                  )
+                else
+                  Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const SizedBox(height: 20),
+                      ElevatedButton(
+                        onPressed: () {
+                          Navigator.pop(context);
+                          BlocProvider.of<DragDropCubit>(mainContext)
+                              .removeSeat(
+                            name: seat.name,
+                            sectionIndex: mainIndex,
+                            seatIndex: seatIndex,
+                          );
+                        },
+                        style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.red),
+                        child: const Text("Delete"),
+                      ),
+                    ],
                   ),
-                ),
-                const SizedBox(height: 20),
-                ElevatedButton(
-                  onPressed: () {
-                    Navigator.pop(context);
-
-                    SeatModel newSeat = SeatModel(
-                      id: seat.id,
-                      name: seat.name,
-                      icon: seat.icon,
-                      isWindowSeat: isWindow,
-                      isFoldingSeat: isFolding,
-                      isReadingLights: seat.isReadingLights,
-                      height: seat.height,
-                      width: seat.width,
-                      heightInch: seat.heightInch,
-                      widthInch: seat.widthInch,
-                      coordinate: seat.coordinate,
-                    );
-
-                    BlocProvider.of<DragDropCubit>(mainContext).updateSeat(
-                      index: mainIndex,
-                      seat: newSeat,
-                      newHInch: int.parse(seatSize.text),
-                      newWInch: int.parse(seatSize.text),
-                    );
-                  },
-                  child: const Text("Save"),
-                ),
-                SizedBox(height: MediaQuery.of(context).viewInsets.bottom),
               ],
             ),
           ),
