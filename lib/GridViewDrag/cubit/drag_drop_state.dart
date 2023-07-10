@@ -24,9 +24,6 @@ class DragDrop extends DragDropState {
   final int angle;
   final List<SeatTypeModel> sTypes;
   final List<SectionModel> sections;
-  final List<SeatModel> seats;
-  final List<SeatModel> wheels;
-  final List<SeatModel> doors;
   final double vWidth;
 
   const DragDrop({
@@ -45,9 +42,6 @@ class DragDrop extends DragDropState {
     required this.angle,
     required this.sTypes,
     required this.sections,
-    required this.seats,
-    required this.wheels,
-    required this.doors,
   });
 
   @override
@@ -56,8 +50,5 @@ class DragDrop extends DragDropState {
         mainAxisCount,
         angle,
         sections,
-        seats,
-        wheels,
-        doors,
       ];
 }

@@ -43,9 +43,6 @@ class DragDropCubit extends Cubit<DragDropState> {
     ),
   ];
   List<SectionModel> sections = [];
-  List<SeatModel> seats = [];
-  List<SeatModel> wheels = [];
-  List<SeatModel> doors = [];
   bool updateState = true;
 
   late final double sHeight;
@@ -55,7 +52,7 @@ class DragDropCubit extends Cubit<DragDropState> {
 
   int crossAxisCount = 25;
   double vWidth = 48;
-  double gridTM = 30;
+  double gridTM = 40;
   int angle = 0;
 
   late double paddingH;
@@ -65,7 +62,6 @@ class DragDropCubit extends Cubit<DragDropState> {
   late double gridBM;
   late double gridWidth;
   late double gridHeight;
-  late double gridSH;
   late int mainAxisCount;
 
   DragDropCubit(this.context) : super(DragDropInitial()) {
@@ -78,9 +74,10 @@ class DragDropCubit extends Cubit<DragDropState> {
     appStatusH = appBarH + statusBarH;
     paddingH = sWidth * .03;
     gridGap = ((sWidth - paddingH * 2) ~/ crossAxisCount);
+    // Adding remaining padding
     paddingH += ((sWidth - paddingH * 2) % crossAxisCount) / 2;
-    seatTypeH = sHeight * .12;
-    buttonH = sHeight * .06;
+    seatTypeH = 100;
+    buttonH = 50;
 
     double vSpacing = appStatusH + seatTypeH + buttonH + gridTM;
     double gridWithVM = sHeight - vSpacing;
@@ -90,7 +87,6 @@ class DragDropCubit extends Cubit<DragDropState> {
     // Grid Size
     gridHeight = (mainAxisCount * gridGap).toDouble();
     gridWidth = (crossAxisCount * gridGap).toDouble();
-    gridSH = (mainAxisCount * gridGap).toDouble();
 
     sections.add(
       SectionModel(
@@ -119,9 +115,6 @@ class DragDropCubit extends Cubit<DragDropState> {
         angle: angle,
         sTypes: sTypes,
         sections: sections,
-        seats: seats,
-        wheels: wheels,
-        doors: doors,
         vWidth: vWidth,
       );
 
@@ -156,6 +149,7 @@ class DragDropCubit extends Cubit<DragDropState> {
           newHeight = (newMAC * gridGap).toDouble();
         }
 
+        // Updating data for new screens
         if (prevGG != gridGap) {
           newSeats = sm.seats.map((seat) {
             // New Coordinate
@@ -346,18 +340,35 @@ class DragDropCubit extends Cubit<DragDropState> {
     required SeatTypeModel sType,
     required DraggableDetails details,
   }) async {
+    // Determining seat size
     double seatH =
         double.parse(((sType.height / vWidth) * gridWidth).toStringAsFixed(2));
     double seatW =
         double.parse(((sType.width / vWidth) * gridWidth).toStringAsFixed(2));
 
     // Checking if the dragged widget touches the grid area or not
-    if (details.offset.dy + seatH - (seatH / 4) <
-        (appStatusH + seatTypeH + gridTM)) {
+    if (details.offset.dy + seatH - (seatH / 4) < (appStatusH + seatTypeH)) {
       return;
     }
 
-    int sectionIndex = 0;
+    // Finding in which section the dragged widget appears in
+    late int sectionIndex;
+    double yOffset = details.offset.dy;
+    yOffset -= (appStatusH + seatTypeH);
+    // Adding the scroll amount
+    yOffset += sController.offset;
+
+    // Extra height above the section
+    double extraHeight = 0;
+    for (int i = 0; i < sections.length; i++) {
+      double h = extraHeight + gridTM + sections[i].height;
+      if (extraHeight < yOffset && yOffset <= h) {
+        sectionIndex = i;
+        break;
+      }
+
+      extraHeight = h;
+    }
     SectionModel section = sections[sectionIndex];
 
     // New x coordinate of the dragged Widget
@@ -367,10 +378,8 @@ class DragDropCubit extends Cubit<DragDropState> {
     // final x coordinate inside the grid view
     double left = max(0, min(maxLeft, newLeft));
 
-    // Adding the y coordinate scroll offset to position it in right place
-    double yOffset = details.offset.dy + sController.offset;
-    double newTop = yOffset - (appStatusH + seatTypeH + gridTM);
-    double maxTop = gridSH - seatH;
+    double newTop = yOffset - gridTM - extraHeight;
+    double maxTop = section.height - seatH;
     double top = max(0, min(maxTop, newTop));
 
     // Alignment of widget along with the grid lines
@@ -402,9 +411,8 @@ class DragDropCubit extends Cubit<DragDropState> {
 
     // if the dragged widget reaches the end of grid container
     if ((top + seatH) ~/ gridGap >= section.mainAxisCount - 1) {
-      sections[sectionIndex].mainAxisCount += (seatH ~/ gridGap);
-      sections[sectionIndex].height =
-          (section.mainAxisCount * gridGap).toDouble();
+      sections[sectionIndex].mainAxisCount++;
+      sections[sectionIndex].height += gridGap;
     }
 
     List<SeatModel> seatModels = sections[sectionIndex].seats.toList();
@@ -446,10 +454,18 @@ class DragDropCubit extends Cubit<DragDropState> {
     double maxLeft = gridWidth - seat.width;
     double left = max(0, min(maxLeft, newLeft));
 
+    double yOffset = details.offset.dy;
+    yOffset -= (appStatusH + seatTypeH);
+    yOffset += sController.offset;
+    double extraHeight = 0;
+
+    for (int i = 0; i < sectionIndex; i++) {
+      extraHeight += gridTM + sections[i].height;
+    }
+
     double prevTop = seat.coordinate.dy;
-    double yOffset = details.offset.dy + sController.offset;
-    double newTop = yOffset - (appStatusH + seatTypeH + gridTM);
-    double maxTop = gridSH - seat.height;
+    double newTop = yOffset - gridTM - extraHeight;
+    double maxTop = section.height - seat.height;
     double top = max(0, min(maxTop, newTop));
 
     if (left != 0) {
@@ -500,10 +516,10 @@ class DragDropCubit extends Cubit<DragDropState> {
         if (xExist && yExist) return;
       }
     }
+
     if ((top + seat.height) ~/ gridGap >= section.mainAxisCount - 1) {
-      sections[sectionIndex].mainAxisCount += (seat.height ~/ gridGap);
-      sections[sectionIndex].height =
-          (section.mainAxisCount * gridGap).toDouble();
+      sections[sectionIndex].mainAxisCount++;
+      sections[sectionIndex].height += gridGap;
     }
 
     List<SeatModel> seatModels = sections[sectionIndex].seats.toList();
@@ -570,32 +586,36 @@ class DragDropCubit extends Cubit<DragDropState> {
       }
     }
 
-    // If does not overlap with other, then setting new size without exceeding the grid area
     late double h, w;
     late int hI, wI;
-    if (overlap) {
+    // If does not overlap with other and does not exceed grid area, then setting new size
+    if (overlap ||
+        seatH >= section.height - seat.coordinate.dy ||
+        seatW >= gridWidth - seat.coordinate.dx) {
       h = seat.height;
       w = seat.width;
 
       hI = seat.heightInch;
       wI = seat.widthInch;
     } else {
-      h = min(gridSH - seat.coordinate.dy, seatH);
-      w = min(gridWidth - seat.coordinate.dx, seatW);
+      h = seatH;
+      w = seatW;
 
       hI = newHInch;
       wI = newWInch;
     }
 
     String icon = seat.icon;
-    if (seat.isWindowSeat && seat.isFoldingSeat) {
-      icon = "asset/icons/sfwo.svg";
-    } else if (seat.isWindowSeat) {
-      icon = "asset/icons/snwo.svg";
-    } else if (seat.isFoldingSeat) {
-      icon = "asset/icons/sfo.svg";
-    } else {
-      icon = "asset/icons/sno.svg";
+    if (seat.name != "Driver") {
+      if (seat.isWindowSeat && seat.isFoldingSeat) {
+        icon = "asset/icons/sfwo.svg";
+      } else if (seat.isWindowSeat) {
+        icon = "asset/icons/snwo.svg";
+      } else if (seat.isFoldingSeat) {
+        icon = "asset/icons/sfo.svg";
+      } else {
+        icon = "asset/icons/sno.svg";
+      }
     }
 
     List<SeatModel> seatModels = sections[sectionIndex].seats.toList();
@@ -632,22 +652,32 @@ class DragDropCubit extends Cubit<DragDropState> {
     double seatW =
         double.parse(((sType.width / vWidth) * gridWidth).toStringAsFixed(2));
 
-    // Checking if the dragged widget touches the grid area or not
-    if (details.offset.dy + seatH - (seatH / 4) <
-        (appStatusH + seatTypeH + gridTM)) {
+    if (details.offset.dy + seatH - (seatH / 4) < (appStatusH + seatTypeH)) {
       return;
     }
 
-    int sectionIndex = 0;
+    late int sectionIndex;
+    double yOffset = details.offset.dy;
+    yOffset -= (appStatusH + seatTypeH);
+    yOffset += sController.offset;
+
+    double extraHeight = 0;
+    for (int i = 0; i < sections.length; i++) {
+      double h = extraHeight + gridTM + sections[i].height;
+      if (extraHeight < yOffset && yOffset <= h) {
+        sectionIndex = i;
+        break;
+      }
+
+      extraHeight = h;
+    }
     SectionModel section = sections[sectionIndex];
-    
-    // Adding the y coordinate scroll offset to position it in right place
-    double yOffset = details.offset.dy + sController.offset;
-    double newTop = yOffset - (appStatusH + seatTypeH + gridTM);
-    double maxTop = gridSH - seatH;
+
+    double newTop = yOffset - gridTM - extraHeight;
+    double maxTop = section.height - seatH;
     double top = max(0, min(maxTop, newTop));
 
-    // Checking if the dragged widget collides with other widgets inside the grid area or not
+    // Checking if the dragged widget collides with other wheels
     for (int i = 0; i < section.wheels.length; i++) {
       CoordinateModel cn = section.wheels[i].coordinate;
       double h = section.wheels[i].height;
@@ -658,6 +688,7 @@ class DragDropCubit extends Cubit<DragDropState> {
       if (yExist) return;
     }
 
+    // Checking if the dragged widget collides with other doors
     for (int i = 0; i < section.doors.length; i++) {
       CoordinateModel cn = section.doors[i].coordinate;
       double h = section.doors[i].height;
@@ -701,9 +732,17 @@ class DragDropCubit extends Cubit<DragDropState> {
     SectionModel section = sections[sectionIndex];
     SeatModel seat = section.wheels[wheelIndex];
 
-    double yOffset = details.offset.dy + sController.offset;
-    double newTop = yOffset - (appStatusH + seatTypeH + gridTM);
-    double maxTop = gridSH - seat.height;
+    double yOffset = details.offset.dy;
+    yOffset -= (appStatusH + seatTypeH);
+    yOffset += sController.offset;
+    double extraHeight = 0;
+
+    for (int i = 0; i < sectionIndex; i++) {
+      extraHeight += gridTM + sections[i].height;
+    }
+
+    double newTop = yOffset - gridTM - extraHeight;
+    double maxTop = section.height - seat.height;
     double top = max(0, min(maxTop, newTop));
 
     for (int i = 0; i < section.wheels.length; i++) {
@@ -762,13 +801,25 @@ class DragDropCubit extends Cubit<DragDropState> {
     double seatW =
         double.parse(((sType.width / vWidth) * gridWidth).toStringAsFixed(2));
 
-    if (details.offset.dy + seatH - (seatH / 4) <
-        (appStatusH + seatTypeH + gridTM)) {
+    if (details.offset.dy + seatH - (seatH / 4) < (appStatusH + seatTypeH)) {
       return;
     }
 
-    int sectionIndex = 0;
+    late int sectionIndex;
+    double yOffset = details.offset.dy;
+    yOffset -= (appStatusH + seatTypeH);
+    yOffset += sController.offset;
 
+    double extraHeight = 0;
+    for (int i = 0; i < sections.length; i++) {
+      double h = extraHeight + gridTM + sections[i].height;
+      if (extraHeight < yOffset && yOffset <= h) {
+        sectionIndex = i;
+        break;
+      }
+
+      extraHeight = h;
+    }
     SectionModel section = sections[sectionIndex];
 
     double left = details.offset.dx;
@@ -779,9 +830,8 @@ class DragDropCubit extends Cubit<DragDropState> {
       left = paddingH + gridWidth - seatW / 2;
     }
 
-    double yOffset = details.offset.dy + sController.offset;
-    double newTop = yOffset - (appStatusH + seatTypeH + gridTM);
-    double maxTop = gridSH - seatH;
+    double newTop = yOffset - gridTM - extraHeight;
+    double maxTop = section.height - seatH;
     double top = max(0, min(maxTop, newTop));
 
     for (int i = 0; i < section.doors.length; i++) {
@@ -837,9 +887,17 @@ class DragDropCubit extends Cubit<DragDropState> {
     SectionModel section = sections[sectionIndex];
     SeatModel seat = section.doors[doorIndex];
 
-    double yOffset = details.offset.dy + sController.offset;
-    double newTop = yOffset - (appStatusH + seatTypeH + gridTM);
-    double maxTop = gridSH - seat.height;
+    double yOffset = details.offset.dy;
+    yOffset -= (appStatusH + seatTypeH);
+    yOffset += sController.offset;
+    double extraHeight = 0;
+
+    for (int i = 0; i < sectionIndex; i++) {
+      extraHeight += gridTM + sections[i].height;
+    }
+
+    double newTop = yOffset - gridTM - extraHeight;
+    double maxTop = section.height - seat.height;
     double top = max(0, min(maxTop, newTop));
 
     double left = details.offset.dx;

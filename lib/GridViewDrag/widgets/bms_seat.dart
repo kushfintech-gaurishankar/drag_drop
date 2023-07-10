@@ -20,11 +20,6 @@ void bmsSeat({
   TextEditingController seatSize = TextEditingController();
   seatSize.text = seat.widthInch.toString();
 
-  double height = seat.height;
-  double width = seat.width;
-
-  bool isSmall = height == gridGap || width == gridGap;
-
   String icon = seat.icon;
   bool isWindow = seat.isWindowSeat;
   bool isFolding = seat.isFoldingSeat;
@@ -74,8 +69,8 @@ void bmsSeat({
                     ),
                   ),
                 SizedBox(
-                  width: seat.width / gridGap * (isSmall ? 30 : 20),
-                  height: seat.height / gridGap * (isSmall ? 30 : 20),
+                  width: 80,
+                  height: 80,
                   child: Transform.rotate(
                     angle: angle * math.pi / 180,
                     child: Column(

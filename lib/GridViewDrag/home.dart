@@ -75,9 +75,6 @@ class _HomeState extends State<Home> {
                             mainAxisCount: state.mainAxisCount,
                             angle: state.angle,
                             sections: state.sections,
-                            seats: state.seats,
-                            wheels: state.wheels,
-                            doors: state.doors,
                           ),
                           Container(
                             padding: const EdgeInsets.symmetric(vertical: 10),

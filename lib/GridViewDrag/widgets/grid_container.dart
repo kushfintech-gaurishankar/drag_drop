@@ -17,9 +17,6 @@ class GridContainer extends StatelessWidget {
   final int mainAxisCount;
   final int angle;
   final List<SectionModel> sections;
-  final List<SeatModel> seats;
-  final List<SeatModel> wheels;
-  final List<SeatModel> doors;
 
   const GridContainer({
     super.key,
@@ -31,9 +28,6 @@ class GridContainer extends StatelessWidget {
     required this.mainAxisCount,
     required this.angle,
     required this.sections,
-    required this.seats,
-    required this.wheels,
-    required this.doors,
   });
 
   @override
@@ -53,6 +47,7 @@ class GridContainer extends StatelessWidget {
               ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   Row(
                     mainAxisAlignment: MainAxisAlignment.start,

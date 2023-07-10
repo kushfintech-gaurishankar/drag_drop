@@ -23,12 +23,10 @@ class SectionModel {
         height: json["height"] as double,
         seats:
             (json["seats"] as List).map((e) => SeatModel.fromJson(e)).toList(),
-        wheels: (json["wheels"] as List)
-            .map((e) => SeatModel.fromJson(json))
-            .toList(),
-        doors: (json["doors"] as List)
-            .map((e) => SeatModel.fromJson(json))
-            .toList(),
+        wheels:
+            (json["wheels"] as List).map((e) => SeatModel.fromJson(e)).toList(),
+        doors:
+            (json["doors"] as List).map((e) => SeatModel.fromJson(e)).toList(),
       );
 
   Map<String, dynamic> toJson() => {
